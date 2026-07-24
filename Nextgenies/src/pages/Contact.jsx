@@ -42,6 +42,7 @@ function Contact() {
               <option>Social Media Management</option>
               <option>Branding</option>
               <option>Complete Digital Growth</option>
+              <option>Digital Marketing</option>
             </select>
 
             <label className="form-label" htmlFor="message">

@@ -55,6 +55,7 @@ function Footer() {
           <div className="footer-contact-item">hello@nextgenies.co</div>
           <div className="footer-contact-item">+91 98XXX XXXXX</div>
           <div className="footer-contact-item">India - Remote-First</div>
+          <div className="footer-contact-item">Mon - Sat , 9AM - 6PM</div>
         </div>
       </div>
 
