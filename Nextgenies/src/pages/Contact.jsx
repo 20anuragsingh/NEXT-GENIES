@@ -1,14 +1,45 @@
+import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 function Contact() {
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    setIsSubmitting(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/contacts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(formData)),
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || "Unable to send your message.");
+
+      form.reset();
+      setStatus({ type: "success", message: "Thanks! We'll get back to you shortly." });
+    } catch (error) {
+      setStatus({ type: "error", message: error.message || "Unable to send your message. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <>
       <Navbar />
 
       <main className="contact-page">
         <section className="contact-grid">
-          <form className="contact-form-card">
+          <form className="contact-form-card" onSubmit={handleSubmit}>
             <h1 className="contact-form-title">Send Us a Message</h1>
 
             <label className="form-label" htmlFor="fullName">
@@ -20,6 +51,7 @@ function Contact() {
               name="fullName"
               placeholder="Your name"
               type="text"
+              required
             />
 
             <label className="form-label" htmlFor="email">
@@ -31,12 +63,13 @@ function Contact() {
               name="email"
               placeholder="hello@yourbrand.com"
               type="email"
+              required
             />
 
             <label className="form-label" htmlFor="service">
               What Are You Looking For?
             </label>
-            <select className="form-input" id="service" name="service" defaultValue="Content Creation">
+            <select className="form-input" id="service" name="service" defaultValue="Content Creation" required>
               <option>Content Creation</option>
               <option>Website Development</option>
               <option>Social Media Management</option>
@@ -53,11 +86,13 @@ function Contact() {
               id="message"
               name="message"
               placeholder="Tell us about your brand, your goals, and your timeline..."
+              required
             />
 
-            <button className="form-submit" type="submit">
-              Send Message &rarr;
+            <button className="form-submit" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Sending..." : "Send Message →"}
             </button>
+            {status.message && <p role="status">{status.message}</p>}
           </form>
 
           <aside className="contact-info">
