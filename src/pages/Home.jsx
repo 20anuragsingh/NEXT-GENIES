@@ -59,15 +59,11 @@ function Home() {
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
             <div className="rocket-glow" />
-            <svg className="rocket" viewBox="0 0 220 260">
-              <path className="rocket-fin left" d="M62 95c-29 8-44 29-45 63 0 8 9 13 16 8l34-24Z" />
-              <path className="rocket-fin right" d="M158 95c29 8 44 29 45 63 0 8-9 13-16 8l-34-24Z" />
-              <path className="rocket-body" d="M110 18c-45 37-68 85-68 145 0 38 34 81 68 101 34-20 68-63 68-101 0-60-23-108-68-145Z" />
-              <path className="rocket-panel" d="M110 73c-29 29-42 62-42 100 0 24 20 54 42 70 22-16 42-46 42-70 0-38-13-71-42-100Z" />
-              <path className="rocket-window" d="M110 37a22 22 0 1 1 0 44 22 22 0 0 1 0-44Z" />
-              <path className="rocket-window-core" d="M110 49a10 10 0 1 1 0 20 10 10 0 0 1 0-20Z" />
-              <path className="rocket-flame" d="M93 230c5 17 11 28 17 33 6-5 12-16 17-33Z" />
-            </svg>
+            <div className="hero-core">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M13.5 2.5 5.4 13h5.4l-.5 8.5L18.6 11h-5.5l.4-8.5Z" />
+              </svg>
+            </div>
           </div>
         </section>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import logo from "../assets/logo.png";
+import BrandMark from "./BrandMark";
 
 function Navbar() {
   const location = useLocation();
@@ -11,7 +11,8 @@ function Navbar() {
   return (
     <nav className={`nav${isMenuOpen ? " menu-open" : ""}`}>
       <Link className="nav-logo" to="/" onClick={closeMenu} aria-label="NextGenies home">
-        <img src={logo} alt="NextGenies Logo" />
+        <BrandMark />
+        <span className="nav-brand-name">NextGenies</span>
       </Link>
 
       <div className="nav-links" id="primary-navigation">
@@ -54,6 +55,7 @@ function Navbar() {
 
       <Link className="nav-cta" to="/contact" onClick={closeMenu}>
         Get Started
+        <span aria-hidden="true">&rarr;</span>
       </Link>
 
       <button

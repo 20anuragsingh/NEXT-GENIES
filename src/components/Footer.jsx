@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+import BrandMark from "./BrandMark";
 
 function Footer() {
   return (
     <footer className="footer">
       <div className="footer-top">
         <div>
-          <div className="footer-logo">NextGenies</div>
+          <div className="footer-logo"><BrandMark />NextGenies</div>
           <p className="footer-tagline">
             We turn brands into digital powerhouses. Content, websites, and
             full digital growth - built to scale.
@@ -40,6 +41,15 @@ function Footer() {
             <Link to="/about">About</Link>
             <Link to="/contact">Contact</Link>
           </div>
+          <div className="footer-sitemap">
+            <div className="footer-col-title">Site Map</div>
+            <div className="footer-links">
+              <Link to="/privacy-policy">Privacy Policy</Link>
+              <Link to="/terms-and-conditions">Terms &amp; Conditions</Link>
+              <Link to="/cookie-policy">Cookie Policy</Link>
+              <Link to="/disclaimer">Disclaimer</Link>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -49,28 +59,6 @@ function Footer() {
             <Link to="/services">Website Development</Link>
             <Link to="/services">Social Media Mgmt</Link>
             <Link to="/services">Branding</Link>
-          </div>
-        </div>
-
-        <div>
-          <div className="column sitemap">
-            <h4>Site Map</h4>
-            <ul>
-              <li><Link to="/">Home</Link></li>
-              <li><Link to="/about">About</Link></li>
-              <li><Link to="/services">Services</Link></li>
-              <li><Link to="/contact">Contact</Link></li>
-              <li><Link to="/privacy-policy">Privacy Policy</Link></li>
-              <li><Link to="/terms-and-conditions">Terms &amp; Conditions</Link></li>
-              <li><Link to="/cookie-policy">Cookie Policy</Link></li>
-              <li><Link to="/disclaimer">Disclaimer</Link></li>
-            </ul>
-          </div>
-          <div className="footer-links">
-            <Link to="/privacy-policy">Privacy Policy</Link>
-            <Link to="/terms-and-conditions">Terms &amp; Conditions</Link>
-            <Link to="/cookie-policy">Cookie Policy</Link>
-            <Link to="/disclaimer">Disclaimer</Link>
           </div>
         </div>
 

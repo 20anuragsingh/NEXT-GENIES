@@ -45,10 +45,12 @@ function Contact() {
       <Navbar />
 
       <main className="contact-page">
+        <header className="contact-heading">
+          <h1 className="contact-form-title">Send Us a Message</h1>
+        </header>
+
         <section className="contact-grid">
           <form className="contact-form-card" onSubmit={handleSubmit}>
-            <h1 className="contact-form-title">Send Us a Message</h1>
-
             <label className="form-label" htmlFor="fullName">
               Full Name
             </label>
