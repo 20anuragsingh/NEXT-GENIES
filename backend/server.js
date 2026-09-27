@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
@@ -40,7 +41,7 @@ const pool = mysql.createPool({
 
 // CORS
 const allowedOrigins = (process.env.FRONTEND_ORIGINS ||
-  "https://nextgenies.com,https://www.nextgenies.com,http://localhost:5173")
+  "https://nextgenies.com,https://www.nextgenies.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -125,7 +126,7 @@ async function sendContactEmails({ fullName, email, phone, service, message }) {
   await transporter.sendMail({
     from: emailFrom,
     to: email,
-    replyTo: email,
+    replyTo: emailFrom,
     subject: userSubject,
     html: userHtml,
   });
@@ -133,6 +134,7 @@ async function sendContactEmails({ fullName, email, phone, service, message }) {
   await transporter.sendMail({
     from: emailFrom,
     to: emailRecipients,
+    replyTo: `"${safeName}" <${email}>`,
     subject: `New inquiry from ${fullName}`,
     html: adminHtml,
   });
@@ -147,7 +149,7 @@ app.use(
         return callback(null, true);
       }
 
-      callback(new Error(`CORS blocked for origin: ${origin}`));
+      callback(null, false);
     },
     methods: ["GET", "POST", "OPTIONS"],
     credentials: false,
@@ -218,27 +220,52 @@ app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
       [fullName, email, phone, service, message]
     );
 
-    await sendContactEmails({ fullName, email, phone, service, message });
+    let emailSent = true;
+    try {
+      await sendContactEmails({ fullName, email, phone, service, message });
+    } catch (emailError) {
+      emailSent = false;
+      console.error("Failed to send contact notification email:", emailError.message);
+    }
 
     res.status(201).json({
       message: "Message received",
       id: result.insertId,
+      emailSent,
     });
-// Serve static SPA files
-app.use(express.static(path.join(__dirname, "..", "dist")));
-
-// SPA fallback for non‑API routes
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "dist", "index.html"));
-});
   } catch (error) {
     next(error);
   }
 });
 
+// 404 handler for unknown API endpoints
+app.all("/api/{*splat}", (_req, res) => {
+  res.status(404).json({
+    status: "error",
+    message: "API endpoint not found.",
+  });
+});
+
+// Serve static SPA files if dist directory exists
+const distPath = path.resolve(__dirname, "..", "dist");
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+
+  // SPA fallback for non-API routes (Express 5 compatible)
+  app.get("/{*splat}", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile("index.html", { root: distPath });
+  });
+}
+
 // Error Handler
-// eslint-disable-next-line no-unused-vars
-app.use((error, _req, res, _next) => {
+app.use((error, _req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
   console.error("SERVER ERROR:", error);
 
   res.status(500).json({
@@ -272,10 +299,19 @@ async function startServer() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
-    await pool.query(`
-      ALTER TABLE contacts
-      ADD COLUMN IF NOT EXISTS phone VARCHAR(30) NOT NULL DEFAULT ''
-    `);
+    try {
+      const [columns] = await pool.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'contacts' AND COLUMN_NAME = 'phone'",
+        [process.env.DB_NAME]
+      );
+      if (columns.length === 0) {
+        await pool.query(
+          "ALTER TABLE contacts ADD COLUMN phone VARCHAR(30) NOT NULL DEFAULT ''"
+        );
+      }
+    } catch (migrationErr) {
+      console.warn("Column migration notice:", migrationErr.message);
+    }
 
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
       try {

@@ -36,23 +36,22 @@ function Home() {
                 Get Started
               </Link>
 
-              <a className="btn-secondary" href="https://wa.me/919910880760" target="_blank" rel="noreferrer">
+              <a className="btn-secondary" href="https://wa.me/919910880760" target="_blank" rel="noopener noreferrer">
                 <svg className="wa-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12.04 2.03A9.92 9.92 0 0 0 3.5 17.02L2.1 22l5.08-1.34a9.94 9.94 0 1 0 4.86-18.63Zm.01 1.79a8.15 8.15 0 0 1 6.9 12.48 8.1 8.1 0 0 1-10.96 2.55l-.36-.22-3.02.8.81-2.94-.24-.38A8.15 8.15 0 0 1 12.05 3.82Zm-3.49 4.1c-.18 0-.47.07-.72.34-.25.27-.94.92-.94 2.24 0 1.32.97 2.6 1.1 2.78.13.18 1.87 2.99 4.63 4.07 2.3.91 2.77.73 3.27.68.5-.05 1.62-.66 1.85-1.3.23-.64.23-1.18.16-1.3-.07-.11-.25-.18-.52-.31-.27-.13-1.62-.8-1.87-.89-.25-.09-.43-.13-.61.13-.18.27-.7.89-.86 1.07-.16.18-.32.2-.59.07-.27-.13-1.15-.42-2.19-1.35-.81-.72-1.36-1.61-1.52-1.88-.16-.27-.02-.41.12-.54.12-.12.27-.32.41-.48.13-.16.18-.27.27-.45.09-.18.04-.34-.02-.48-.07-.13-.61-1.47-.84-2.01-.22-.52-.44-.45-.61-.46h-.52Z" />
                 </svg>
                 WhatsApp Us
               </a>
             </div>
-<p className="home-cta-links">
-  <Link className="home-link" to="/about">Our Story</Link>
-  <Link className="home-link" to="/services">Our Services</Link>
-  <Link className="home-link" to="/contact">Get In Touch</Link>
-</p>
-<div className="scroll-hint">
-  <span className="scroll-line" />
-  Scroll to explore
-</div>
-
+            <p className="home-cta-links">
+              <Link className="home-link" to="/about">Our Story</Link>
+              <Link className="home-link" to="/services">Our Services</Link>
+              <Link className="home-link" to="/contact">Get In Touch</Link>
+            </p>
+            <div className="scroll-hint">
+              <span className="scroll-line" />
+              Scroll to explore
+            </div>
           </div>
 
           <div className="hero-visual" aria-hidden="true">
@@ -113,7 +112,7 @@ function Home() {
             </div>
             <div>
               <div className="trust-label">Modern Designs</div>
-            <div className="trust-sub">Cutting-edge aesthetics</div>
+              <div className="trust-sub">Cutting-edge aesthetics</div>
             </div>
           </div>
         </section>
@@ -200,7 +199,7 @@ function Home() {
                   Reels, carousels, captions, and campaigns that capture
                   attention and drive results across all platforms.
                 </p>
-                <span className="svc-link">Learn More &rarr;</span>
+                <Link to="/services" className="svc-link">Learn More &rarr;</Link>
               </div>
             </article>
 
@@ -212,7 +211,7 @@ function Home() {
                   Custom, high-performance websites designed to convert. From
                   landing pages to full product sites.
                 </p>
-                <span className="svc-link">Learn More &rarr;</span>
+                <Link to="/services" className="svc-link">Learn More &rarr;</Link>
               </div>
             </article>
 
@@ -224,7 +223,7 @@ function Home() {
                   We run your social presence from end to end: strategy,
                   posting, engagement, and growth analytics.
                 </p>
-                <span className="svc-link">Learn More &rarr;</span>
+                <Link to="/services" className="svc-link">Learn More &rarr;</Link>
               </div>
             </article>
 
@@ -236,7 +235,7 @@ function Home() {
                   Logo, identity, visual language - everything you need to build
                   a brand that people recognize and trust.
                 </p>
-                <span className="svc-link">Learn More &rarr;</span>
+                <Link to="/services" className="svc-link">Learn More &rarr;</Link>
               </div>
             </article>
           </div>
@@ -337,7 +336,7 @@ function Home() {
                   We understand modern attention spans
                 </div>
                 <div className="why-sub">
-                  Content built for 2025 audiences - fast, punchy, and
+                  Content built for modern audiences - fast, punchy, and
                   algorithmically sharp.
                 </div>
               </div>

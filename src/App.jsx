@@ -37,30 +37,55 @@ function App() {
       ".legal-section",
     ].join(",");
 
-    const elements = [...document.querySelectorAll(selector)];
-    elements.forEach((element, index) => {
-      element.classList.add("scroll-reveal");
-      element.style.setProperty("--reveal-delay", `${(index % 4) * 70}ms`);
-    });
+    const hasIntersectionObserver = "IntersectionObserver" in window;
+    let observer = null;
 
-    if (!("IntersectionObserver" in window)) {
-      elements.forEach((element) => element.classList.add("is-visible"));
-      return undefined;
+    if (hasIntersectionObserver) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          });
+        },
+        { threshold: 0.12, rootMargin: "0px 0px -7% 0px" },
+      );
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        });
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -7% 0px" },
-    );
+    const applyScrollReveal = () => {
+      const elements = [...document.querySelectorAll(selector)];
+      elements.forEach((element, index) => {
+        if (!element.classList.contains("scroll-reveal")) {
+          element.classList.add("scroll-reveal");
+          element.style.setProperty("--reveal-delay", `${(index % 4) * 70}ms`);
+        }
 
-    elements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
+        if (!hasIntersectionObserver) {
+          element.classList.add("is-visible");
+        } else if (!element.classList.contains("is-visible") && observer) {
+          observer.observe(element);
+        }
+      });
+    };
+
+    applyScrollReveal();
+
+    const mutationObserver = new MutationObserver(() => {
+      applyScrollReveal();
+    });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      mutationObserver.disconnect();
+      if (observer) {
+        observer.disconnect();
+      }
+    };
   }, [location.pathname]);
 
   return (
