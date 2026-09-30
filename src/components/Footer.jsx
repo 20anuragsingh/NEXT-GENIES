@@ -40,6 +40,7 @@ function Footer() {
             <Link to="/services">Services</Link>
             <Link to="/about">About</Link>
             <Link to="/contact">Contact</Link>
+            <Link to="/blogs">Blogs</Link>
           </div>
           <div className="footer-sitemap">
             <div className="footer-col-title">Site Map</div>

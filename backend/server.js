@@ -5,6 +5,8 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
+import multer from "multer";
+import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -21,6 +23,9 @@ const requiredDatabaseVariables = [
   "DB_NAME",
   "DB_USER",
   "DB_PASSWORD",
+  "ADMIN_USERNAME",
+  "ADMIN_PASSWORD",
+  "ADMIN_JWT_SECRET",
 ];
 console.log("DB_HOST =", process.env.DB_HOST);
 console.log("DB_NAME =", process.env.DB_NAME);
@@ -151,7 +156,7 @@ app.use(
 
       callback(null, false);
     },
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: false,
   })
 );
@@ -164,6 +169,152 @@ const contactRateLimit = rateLimit({
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { message: "Too many contact requests. Please try again later." },
+});
+
+const adminLoginRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { message: "Too many login attempts. Please try again later." },
+});
+
+const uploadsPath = path.resolve(__dirname, "..", "public", "uploads");
+fs.mkdirSync(uploadsPath, { recursive: true });
+
+const blogUpload = multer({
+  storage: multer.diskStorage({
+    destination: uploadsPath,
+    filename: (_req, file, callback) => {
+      const extension = path.extname(file.originalname).toLowerCase();
+      callback(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, callback) => {
+    callback(null, ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype));
+  },
+});
+
+function authenticateAdmin(req, res, next) {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+
+  if (!token) {
+    return res.status(401).json({ message: "Admin authentication required." });
+  }
+
+  try {
+    jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ message: "Your admin session has expired." });
+  }
+}
+
+function readBlogField(value, maxLength) {
+  const field = typeof value === "string" ? value.trim() : "";
+  return field.length <= maxLength ? field : "";
+}
+
+function slugify(value) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function removeBlogImage(imageUrl) {
+  if (!imageUrl?.startsWith("/uploads/")) return;
+  const imagePath = path.resolve(uploadsPath, path.basename(imageUrl));
+  if (imagePath.startsWith(uploadsPath)) fs.unlink(imagePath, () => {});
+}
+
+app.post("/api/admin/login", adminLoginRateLimit, (req, res) => {
+  const username = typeof req.body?.username === "string" ? req.body.username.trim() : "";
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+
+  if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ message: "Invalid admin credentials." });
+  }
+
+  const token = jwt.sign({ role: "admin", username }, process.env.ADMIN_JWT_SECRET, { expiresIn: "8h" });
+  res.json({ token });
+});
+
+app.get("/api/blogs", async (_req, res, next) => {
+  try {
+    const [blogs] = await pool.query(
+      "SELECT id, title, slug, description, image_url AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
+    );
+    res.json(blogs);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/blogs/:slug", async (req, res, next) => {
+  try {
+    const [blogs] = await pool.query(
+      "SELECT id, title, slug, description, content, image_url AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE slug = ? AND is_published = 1 LIMIT 1",
+      [req.params.slug]
+    );
+
+    if (!blogs.length) return res.status(404).json({ message: "Blog not found." });
+    res.json(blogs[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/blogs", authenticateAdmin, async (_req, res, next) => {
+  try {
+    const [blogs] = await pool.query(
+      "SELECT id, title, slug, description, content, image_url AS imageUrl, author, is_published AS isPublished, published_at AS publishedAt, created_at AS createdAt FROM blogs ORDER BY created_at DESC"
+    );
+    res.json(blogs);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/blogs", authenticateAdmin, blogUpload.single("image"), async (req, res, next) => {
+  try {
+    const title = readBlogField(req.body?.title, 180);
+    const description = readBlogField(req.body?.description, 320);
+    const content = readBlogField(req.body?.content, 50000);
+    const author = readBlogField(req.body?.author, 100) || "NextGenies";
+    const slug = slugify(readBlogField(req.body?.slug, 180) || title);
+    const isPublished = req.body?.isPublished === "true" || req.body?.isPublished === "1";
+
+    if (!title || !description || !content || !slug) {
+      if (req.file) fs.unlink(req.file.path, () => {});
+      return res.status(400).json({ message: "Title, description, content, and a valid slug are required." });
+    }
+
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    const [result] = await pool.execute(
+      `INSERT INTO blogs (title, slug, description, content, image_url, author, is_published, published_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, slug, description, content, imageUrl, author, isPublished, isPublished ? new Date() : null]
+    );
+    res.status(201).json({ id: result.insertId, message: "Blog published successfully." });
+  } catch (error) {
+    if (req.file) fs.unlink(req.file.path, () => {});
+    if (error.code === "ER_DUP_ENTRY") return res.status(409).json({ message: "A blog with that slug already exists." });
+    next(error);
+  }
+});
+
+app.delete("/api/admin/blogs/:id", authenticateAdmin, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query("SELECT image_url AS imageUrl FROM blogs WHERE id = ?", [req.params.id]);
+    await pool.execute("DELETE FROM blogs WHERE id = ?", [req.params.id]);
+    removeBlogImage(rows[0]?.imageUrl);
+    res.json({ message: "Blog deleted." });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Health Check
@@ -248,6 +399,7 @@ app.all("/api/{*splat}", (_req, res) => {
 
 // Serve static SPA files if dist directory exists
 const distPath = path.resolve(__dirname, "..", "dist");
+app.use("/uploads", express.static(uploadsPath));
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 
@@ -294,6 +446,22 @@ async function startServer() {
         phone VARCHAR(30) NOT NULL,
         service VARCHAR(100) NOT NULL,
         message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY(id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS blogs (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        title VARCHAR(180) NOT NULL,
+        slug VARCHAR(180) NOT NULL UNIQUE,
+        description VARCHAR(320) NOT NULL,
+        content LONGTEXT NOT NULL,
+        image_url VARCHAR(500) DEFAULT NULL,
+        author VARCHAR(100) NOT NULL DEFAULT 'NextGenies',
+        is_published BOOLEAN NOT NULL DEFAULT FALSE,
+        published_at TIMESTAMP NULL DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY(id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4

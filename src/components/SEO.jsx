@@ -9,6 +9,7 @@ function SEO({
   description,
   canonicalPath = "",
   ogType = "website",
+  robots = "index, follow",
 }) {
   useEffect(() => {
     const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Digital Growth Agency`;
@@ -41,6 +42,7 @@ function SEO({
 
     // Standard Meta
     setMeta("description", description);
+    setMeta("robots", robots);
     setLink("canonical", canonicalUrl);
 
     // Open Graph
@@ -56,7 +58,7 @@ function SEO({
     setMeta("twitter:title", fullTitle);
     setMeta("twitter:description", description);
     setMeta("twitter:image", DEFAULT_IMAGE);
-  }, [title, description, canonicalPath, ogType]);
+  }, [title, description, canonicalPath, ogType, robots]);
 
   return null;
 }
