@@ -46,7 +46,7 @@ NEXT-GENIES/
 ├── public/
 │   ├── robots.txt
 │   ├── sitemap.xml
-│   └── uploads/           Runtime blog images
+│   └── uploads/           Legacy filesystem images, if any
 ├── src/
 │   ├── components/        Shared navigation, footer, SEO, and error UI
 │   ├── pages/             Route-level React pages
@@ -163,7 +163,7 @@ Open the URL printed by Vite, normally `http://localhost:5173`.
 6. Published posts appear on `/blogs`.
 7. Each article can be opened at `/blogs/:slug` by clicking its title, image, or Read article link.
 
-Blog text and metadata are stored in MySQL. Uploaded images are stored in `public/uploads` on the backend server and are served through `/uploads/...`.
+Blog text, metadata, and new uploaded image bytes are stored in MySQL. Images are retrieved through `/api/blogs/:id/image`. The existing `public/uploads` directory remains supported for older filesystem-backed posts.
 
 ## API Endpoints
 
@@ -173,6 +173,7 @@ Blog text and metadata are stored in MySQL. Uploaded images are stored in `publi
 GET  /api/health
 GET  /api/blogs
 GET  /api/blogs/:slug
+GET  /api/blogs/:id/image
 POST /api/contacts
 ```
 
@@ -221,11 +222,9 @@ npm start         # Start API normally
 
 ### Upload persistence
 
-The current implementation stores images on local server disk. A normal code update should preserve them if the hosting platform keeps the same application directory, but a clean deployment can remove untracked runtime files. Before relying on this in production:
+New blog images are stored as raw binary data in the MySQL `blogs.image_data` `MEDIUMBLOB` column, with the MIME type stored in `blogs.image_mime_type`. The API returns them through a cacheable image endpoint, so they remain available after a code redeployment as long as the database is preserved.
 
-- Confirm Hostinger's deployment behavior for `public/uploads`.
-- Back up the MySQL database and `public/uploads`.
-- For larger or more reliable deployments, move images to persistent storage such as Cloudinary, Amazon S3, or an S3-compatible object store.
+Older images that were uploaded before database image storage was enabled may still use `public/uploads`. Back up the database and that directory before deployment. For very large image libraries, object storage or a media CDN may still be more cost-effective than database BLOB storage.
 
 Public blog images must be readable by visitors for SEO. The upload and delete operations remain admin-only.
 

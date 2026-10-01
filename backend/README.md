@@ -19,7 +19,7 @@ ADMIN_PASSWORD=use-a-strong-password
 ADMIN_JWT_SECRET=use-a-long-random-secret
 ```
 
-Open `/admin` in the website to sign in. Blog images are limited to 5 MB and are stored in `public/uploads`; published posts appear at `/blogs` and the Blogs link is available in the footer.
+Open `/admin` in the website to sign in. Blog images are limited to 5 MB and new uploads are stored in the MySQL `blogs.image_data` column with their MIME type in `blogs.image_mime_type`. Published posts appear at `/blogs` and the Blogs link is available in the footer. Older filesystem-backed images in `public/uploads` remain supported.
 
 ## Frontend
 

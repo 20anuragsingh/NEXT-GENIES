@@ -183,13 +183,7 @@ const uploadsPath = path.resolve(__dirname, "..", "public", "uploads");
 fs.mkdirSync(uploadsPath, { recursive: true });
 
 const blogUpload = multer({
-  storage: multer.diskStorage({
-    destination: uploadsPath,
-    filename: (_req, file, callback) => {
-      const extension = path.extname(file.originalname).toLowerCase();
-      callback(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, callback) => {
     callback(null, ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype));
@@ -245,9 +239,28 @@ app.post("/api/admin/login", adminLoginRateLimit, (req, res) => {
 app.get("/api/blogs", async (_req, res, next) => {
   try {
     const [blogs] = await pool.query(
-      "SELECT id, title, slug, description, image_url AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
+      "SELECT id, title, slug, description, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
     );
     res.json(blogs);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/blogs/:id/image", async (req, res, next) => {
+  try {
+    const [blogs] = await pool.query(
+      "SELECT image_data AS imageData, image_mime_type AS imageMimeType, image_url AS imageUrl FROM blogs WHERE id = ? AND is_published = 1 LIMIT 1",
+      [req.params.id]
+    );
+
+    const blog = blogs[0];
+    if (!blog) return res.status(404).json({ message: "Image not found." });
+    if (!blog.imageData) return res.redirect(blog.imageUrl || "/images/blog-placeholder.svg");
+
+    res.set("Content-Type", blog.imageMimeType || "application/octet-stream");
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+    res.send(blog.imageData);
   } catch (error) {
     next(error);
   }
@@ -256,7 +269,7 @@ app.get("/api/blogs", async (_req, res, next) => {
 app.get("/api/blogs/:slug", async (req, res, next) => {
   try {
     const [blogs] = await pool.query(
-      "SELECT id, title, slug, description, content, image_url AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE slug = ? AND is_published = 1 LIMIT 1",
+      "SELECT id, title, slug, description, content, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE slug = ? AND is_published = 1 LIMIT 1",
       [req.params.slug]
     );
 
@@ -270,7 +283,7 @@ app.get("/api/blogs/:slug", async (req, res, next) => {
 app.get("/api/admin/blogs", authenticateAdmin, async (_req, res, next) => {
   try {
     const [blogs] = await pool.query(
-      "SELECT id, title, slug, description, content, image_url AS imageUrl, author, is_published AS isPublished, published_at AS publishedAt, created_at AS createdAt FROM blogs ORDER BY created_at DESC"
+      "SELECT id, title, slug, description, content, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, is_published AS isPublished, published_at AS publishedAt, created_at AS createdAt FROM blogs ORDER BY created_at DESC"
     );
     res.json(blogs);
   } catch (error) {
@@ -288,19 +301,18 @@ app.post("/api/admin/blogs", authenticateAdmin, blogUpload.single("image"), asyn
     const isPublished = req.body?.isPublished === "true" || req.body?.isPublished === "1";
 
     if (!title || !description || !content || !slug) {
-      if (req.file) fs.unlink(req.file.path, () => {});
       return res.status(400).json({ message: "Title, description, content, and a valid slug are required." });
     }
 
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    const imageData = req.file?.buffer || null;
+    const imageMimeType = req.file?.mimetype || null;
     const [result] = await pool.execute(
-      `INSERT INTO blogs (title, slug, description, content, image_url, author, is_published, published_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, slug, description, content, imageUrl, author, isPublished, isPublished ? new Date() : null]
+      `INSERT INTO blogs (title, slug, description, content, image_url, image_data, image_mime_type, author, is_published, published_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, slug, description, content, null, imageData, imageMimeType, author, isPublished, isPublished ? new Date() : null]
     );
     res.status(201).json({ id: result.insertId, message: "Blog published successfully." });
   } catch (error) {
-    if (req.file) fs.unlink(req.file.path, () => {});
     if (error.code === "ER_DUP_ENTRY") return res.status(409).json({ message: "A blog with that slug already exists." });
     next(error);
   }
@@ -459,6 +471,8 @@ async function startServer() {
         description VARCHAR(320) NOT NULL,
         content LONGTEXT NOT NULL,
         image_url VARCHAR(500) DEFAULT NULL,
+        image_data MEDIUMBLOB DEFAULT NULL,
+        image_mime_type VARCHAR(100) DEFAULT NULL,
         author VARCHAR(100) NOT NULL DEFAULT 'NextGenies',
         is_published BOOLEAN NOT NULL DEFAULT FALSE,
         published_at TIMESTAMP NULL DEFAULT NULL,
@@ -466,6 +480,18 @@ async function startServer() {
         PRIMARY KEY(id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
+
+    const [blogColumns] = await pool.query(
+      "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'blogs'",
+      [process.env.DB_NAME]
+    );
+    const blogColumnNames = new Set(blogColumns.map((column) => column.COLUMN_NAME));
+    if (!blogColumnNames.has("image_data")) {
+      await pool.query("ALTER TABLE blogs ADD COLUMN image_data MEDIUMBLOB DEFAULT NULL");
+    }
+    if (!blogColumnNames.has("image_mime_type")) {
+      await pool.query("ALTER TABLE blogs ADD COLUMN image_mime_type VARCHAR(100) DEFAULT NULL");
+    }
 
     try {
       const [columns] = await pool.query(
