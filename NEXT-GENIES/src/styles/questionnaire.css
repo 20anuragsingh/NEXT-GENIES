@@ -1,0 +1,976 @@
+/* ==========================================================================
+   NEXTGENIES INTERACTIVE MULTI-STEP SERVICE QUESTIONNAIRE STYLES
+   ========================================================================== */
+
+/* Page Grid: Ample responsive allocation for questionnaire */
+.contact-page .contact-grid,
+.contact-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.75fr) !important;
+  gap: 28px !important;
+  width: min(100% - 32px, 1200px) !important;
+  margin: 0 auto !important;
+  padding: clamp(36px, 5vw, 64px) 0 clamp(48px, 6vw, 80px) !important;
+  align-items: start !important;
+}
+
+/* Subtitle under page heading */
+.contact-hero-sub {
+  margin: 14px auto 0 !important;
+  max-width: 640px !important;
+  color: #94a3b8 !important;
+  font-size: clamp(14px, 1.4vw, 16px) !important;
+  line-height: 1.65 !important;
+  text-align: center !important;
+}
+
+/* Global button reset for questionnaire components */
+button.quest-history-chip,
+button.quest-summary-edit-btn,
+button.quest-btn-back,
+button.quest-btn-next,
+button.quest-option-card,
+button.quest-timeline-card,
+button.quest-restart-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Main questionnaire card container - completely overrides legacy .contact-form-card grid layout */
+.contact-page .contact-form-card,
+.contact-page .questionnaire-card,
+.questionnaire-card,
+.contact-form-card.questionnaire-card {
+  display: block !important;
+  grid-template-columns: none !important;
+  grid-template-areas: none !important;
+  grid-template-rows: none !important;
+  gap: 0 !important;
+  column-gap: 0 !important;
+  row-gap: 0 !important;
+  position: relative !important;
+  background: linear-gradient(145deg, rgba(20, 32, 54, 0.96), rgba(12, 19, 34, 0.98)) !important;
+  border: 1px solid rgba(148, 190, 255, 0.22) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 28px 70px rgba(2, 8, 23, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  padding: clamp(24px, 4vw, 42px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Questionnaire containers take 100% of card width */
+.contact-page .questionnaire-container,
+.questionnaire-container {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  grid-column: 1 / -1 !important;
+  box-sizing: border-box !important;
+}
+
+/* Override any pseudo-elements attached by legacy CSS */
+.questionnaire-card::after,
+.contact-form-card.questionnaire-card::after {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+/* Progress Header */
+.quest-progress-header {
+  margin-bottom: 24px !important;
+  padding-bottom: 18px !important;
+  border-bottom: 1px solid rgba(148, 190, 255, 0.12) !important;
+}
+
+.quest-progress-meta {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 12px !important;
+}
+
+.quest-step-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(37, 99, 235, 0.18) !important;
+  border: 1px solid rgba(59, 130, 246, 0.35) !important;
+  border-radius: 999px !important;
+  padding: 5px 14px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #60a5fa !important;
+  letter-spacing: 0.6px !important;
+  text-transform: uppercase !important;
+}
+
+.quest-badge-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #3b82f6 !important;
+  box-shadow: 0 0 10px #3b82f6 !important;
+  animation: questPulseDot 2s infinite ease-in-out !important;
+}
+
+@keyframes questPulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.25); }
+}
+
+.quest-step-title-hint {
+  font-size: 13px !important;
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+}
+
+.quest-progress-track {
+  width: 100% !important;
+  height: 6px !important;
+  background: rgba(15, 23, 42, 0.7) !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(148, 190, 255, 0.1) !important;
+  position: relative !important;
+}
+
+.quest-progress-fill {
+  height: 100% !important;
+  background: linear-gradient(90deg, #2563eb, #60a5fa, #38bdf8) !important;
+  border-radius: 999px !important;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* History / Breadcrumb trail of completed answers */
+.quest-history-trail {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-top: 14px !important;
+}
+
+button.quest-history-chip,
+.quest-history-chip {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(22, 36, 62, 0.85) !important;
+  border: 1px solid rgba(148, 190, 255, 0.24) !important;
+  color: #cbd5e1 !important;
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-family: inherit !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+  line-height: 1.3 !important;
+}
+
+button.quest-history-chip:hover,
+.quest-history-chip:hover {
+  background: rgba(37, 99, 235, 0.25) !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+}
+
+.quest-history-check {
+  color: #22c55e !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  flex-shrink: 0 !important;
+}
+
+.quest-history-label {
+  color: #8190a6 !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  flex-shrink: 0 !important;
+}
+
+.quest-history-text {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 140px !important;
+}
+
+/* Card slide/fade animations */
+.quest-step-container {
+  position: relative !important;
+  min-height: 340px !important;
+}
+
+.quest-step-card {
+  width: 100% !important;
+}
+
+.quest-anim-forward {
+  animation: questFadeSlideForward 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.quest-anim-backward {
+  animation: questFadeSlideBackward 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes questFadeSlideForward {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes questFadeSlideBackward {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Step titles and questions */
+.quest-heading {
+  margin-bottom: 22px !important;
+}
+
+.quest-title {
+  color: #ffffff !important;
+  font-size: clamp(20px, 2.2vw, 26px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  line-height: 1.25 !important;
+  margin: 0 0 8px 0 !important;
+}
+
+.quest-desc {
+  color: #94a3b8 !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+}
+
+/* Form inputs for Step 1 */
+.quest-form-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+  margin-bottom: 8px !important;
+}
+
+.quest-field-group {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+.quest-field-group.full-width {
+  grid-column: 1 / -1 !important;
+}
+
+.quest-label {
+  display: block !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #b7c1d0 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.7px !important;
+  margin-bottom: 8px !important;
+}
+
+.quest-label-optional {
+  font-weight: 400 !important;
+  color: #64748b !important;
+  text-transform: none !important;
+  font-size: 11px !important;
+  margin-left: 6px !important;
+}
+
+input.quest-input,
+textarea.quest-input,
+.quest-input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: block !important;
+  width: 100% !important;
+  min-height: 52px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  background: rgba(6, 14, 28, 0.7) !important;
+  border: 1.5px solid rgba(148, 190, 255, 0.2) !important;
+  color: #f1f5f9 !important;
+  font-size: 14.5px !important;
+  font-family: inherit !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+}
+
+input.quest-input::placeholder,
+textarea.quest-input::placeholder,
+.quest-input::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+input.quest-input:hover,
+textarea.quest-input:hover,
+.quest-input:hover {
+  border-color: rgba(147, 197, 253, 0.4) !important;
+}
+
+input.quest-input:focus,
+textarea.quest-input:focus,
+.quest-input:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  background: rgba(6, 14, 28, 0.95) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+}
+
+input.quest-input.has-error,
+textarea.quest-input.has-error,
+.quest-input.has-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.quest-error-text {
+  color: #f87171 !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  margin-top: 5px !important;
+  display: block !important;
+}
+
+/* ==========================================================================
+   Option Cards (Steps 2, 3, 4) — Vertical Stacked Structure
+   - Top Bar: [Icon] on left, [Badge + Radio Dot] on right
+   - Content: Full-width Title & Description below top bar
+   ========================================================================== */
+.quest-options-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  margin-bottom: 14px !important;
+}
+
+button.quest-option-card,
+.quest-option-card {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 18px 20px !important;
+  border-radius: 16px !important;
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1.5px solid rgba(148, 190, 255, 0.18) !important;
+  cursor: pointer !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  text-align: left !important;
+  width: 100% !important;
+  position: relative !important;
+  user-select: none !important;
+  font-family: inherit !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+
+button.quest-option-card:hover,
+.quest-option-card:hover {
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  background: rgba(30, 48, 79, 0.35) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 24px rgba(2, 8, 23, 0.35) !important;
+}
+
+button.quest-option-card.selected,
+.quest-option-card.selected {
+  border-color: #3b82f6 !important;
+  background: rgba(37, 99, 235, 0.18) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35), 0 12px 28px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* Top Bar: Icon on left, Badge + Dot on right */
+.quest-option-top-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  margin-bottom: 12px !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+
+.quest-option-icon {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 10px !important;
+  background: rgba(37, 99, 235, 0.16) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  color: #60a5fa !important;
+  transition: all 0.2s ease !important;
+}
+
+button.quest-option-card.selected .quest-option-icon {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45) !important;
+}
+
+.quest-option-meta-right {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+}
+
+.quest-option-badge {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.32) !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+  display: inline-block !important;
+}
+
+.quest-radio-dot {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  border: 1.5px solid rgba(148, 190, 255, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  transition: all 0.2s ease !important;
+  color: transparent !important;
+  box-sizing: border-box !important;
+}
+
+button.quest-option-card.selected .quest-radio-dot,
+button.quest-timeline-card.selected .quest-radio-dot {
+  border-color: #3b82f6 !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.6) !important;
+}
+
+/* Option Content Area (100% width, never squeezed) */
+.quest-option-content {
+  width: 100% !important;
+  min-width: 0 !important;
+  text-align: left !important;
+}
+
+.quest-option-title {
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  margin: 0 0 6px 0 !important;
+  word-break: break-word !important;
+}
+
+.quest-option-desc {
+  color: #94a3b8 !important;
+  font-size: 12.5px !important;
+  line-height: 1.55 !important;
+  margin: 0 !important;
+  word-break: break-word !important;
+}
+
+/* ==========================================================================
+   Step 4: Sub-questions, Scope & Timeline
+   ========================================================================== */
+.quest-sub-section {
+  margin-bottom: 24px !important;
+}
+
+.quest-sub-label {
+  display: block !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #cbd5e1 !important;
+  letter-spacing: 0.6px !important;
+  text-transform: uppercase !important;
+  margin-bottom: 12px !important;
+}
+
+/* Scope Card */
+button.quest-scope-card .quest-option-top-bar {
+  margin-bottom: 8px !important;
+}
+
+button.quest-scope-card .quest-option-title {
+  flex: 1 !important;
+  margin: 0 !important;
+  padding-right: 8px !important;
+  font-size: 14px !important;
+}
+
+/* Timeline Grid */
+.quest-timeline-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+button.quest-timeline-card,
+.quest-timeline-card {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding: 14px 16px !important;
+  border-radius: 14px !important;
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1.5px solid rgba(148, 190, 255, 0.18) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-align: left !important;
+  font-family: inherit !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+button.quest-timeline-card:hover {
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  background: rgba(30, 48, 79, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+button.quest-timeline-card.selected {
+  border-color: #3b82f6 !important;
+  background: rgba(37, 99, 235, 0.18) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+}
+
+.quest-timeline-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  gap: 8px !important;
+  margin-bottom: 5px !important;
+}
+
+.quest-timeline-title {
+  color: #ffffff !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  flex: 1 !important;
+  margin: 0 !important;
+}
+
+.quest-timeline-desc {
+  color: #94a3b8 !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+}
+
+/* ==========================================================================
+   Step 5: Summary Section & Card
+   ========================================================================== */
+.contact-page .quest-summary-card,
+.quest-summary-card {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  background: rgba(8, 16, 32, 0.75) !important;
+  border: 1px solid rgba(148, 190, 255, 0.2) !important;
+  border-radius: 18px !important;
+  padding: 6px 20px !important;
+  margin-bottom: 22px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.quest-summary-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 0 !important;
+  border-bottom: 1px solid rgba(148, 190, 255, 0.1) !important;
+  gap: 16px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.quest-summary-row:last-child {
+  border-bottom: none !important;
+}
+
+.quest-summary-label-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+  min-width: 160px !important;
+}
+
+.quest-row-icon {
+  font-size: 15px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.quest-summary-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #94a3b8 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  white-space: nowrap !important;
+}
+
+.quest-summary-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 14px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.quest-summary-value {
+  color: #f1f5f9 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-align: right !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  white-space: normal !important;
+}
+
+button.quest-summary-edit-btn,
+.quest-summary-edit-btn {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: rgba(37, 99, 235, 0.14) !important;
+  border: 1px solid rgba(59, 130, 246, 0.35) !important;
+  color: #60a5fa !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 5px 12px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  letter-spacing: 0.3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  flex-shrink: 0 !important;
+  font-family: inherit !important;
+  box-sizing: border-box !important;
+}
+
+button.quest-summary-edit-btn:hover {
+  background: #2563eb !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+textarea.quest-notes-area {
+  min-height: 96px !important;
+  padding: 12px 16px !important;
+  resize: vertical !important;
+  line-height: 1.6 !important;
+}
+
+/* ==========================================================================
+   Actions and CTA Buttons
+   ========================================================================== */
+.quest-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-top: 24px !important;
+  padding-top: 20px !important;
+  border-top: 1px solid rgba(148, 190, 255, 0.12) !important;
+}
+
+button.quest-btn-back,
+.quest-btn-back {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 1.5px solid rgba(148, 190, 255, 0.22) !important;
+  border-radius: 12px !important;
+  color: #cbd5e1 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  padding: 13px 24px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.2s ease !important;
+  font-family: inherit !important;
+  box-sizing: border-box !important;
+}
+
+button.quest-btn-back:hover:not(:disabled) {
+  background: rgba(30, 48, 79, 0.9) !important;
+  border-color: rgba(147, 197, 253, 0.45) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+button.quest-btn-next,
+.quest-btn-next {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border: 1px solid rgba(147, 197, 253, 0.4) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  padding: 13px 30px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin-left: auto !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35) !important;
+  letter-spacing: 0.2px !important;
+  font-family: inherit !important;
+  box-sizing: border-box !important;
+}
+
+button.quest-btn-next:hover:not(:disabled) {
+  filter: brightness(1.12) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.5) !important;
+}
+
+button.quest-btn-next:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+button.quest-submit-cta,
+.quest-submit-cta {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  border: 1px solid rgba(191, 219, 254, 0.45) !important;
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.45) !important;
+  padding: 14px 34px !important;
+  font-size: 15px !important;
+}
+
+/* ==========================================================================
+   Success Confirmation Card
+   ========================================================================== */
+.quest-success-view {
+  text-align: center !important;
+  padding: 24px 10px 10px !important;
+}
+
+.quest-success-icon-wrap {
+  width: 68px !important;
+  height: 68px !important;
+  border-radius: 50% !important;
+  background: rgba(34, 197, 94, 0.15) !important;
+  border: 2px solid #22c55e !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #22c55e !important;
+  margin-bottom: 20px !important;
+  box-shadow: 0 0 28px rgba(34, 197, 94, 0.35) !important;
+}
+
+.quest-success-title {
+  color: #ffffff !important;
+  font-size: clamp(24px, 2.6vw, 30px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.6px !important;
+  margin-bottom: 12px !important;
+}
+
+.quest-success-desc {
+  color: #cbd5e1 !important;
+  font-size: 14px !important;
+  line-height: 1.7 !important;
+  max-width: 480px !important;
+  margin: 0 auto 24px !important;
+}
+
+.quest-success-recap {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(148, 190, 255, 0.18) !important;
+  border-radius: 14px !important;
+  padding: 16px 20px !important;
+  max-width: 460px !important;
+  margin: 0 auto 26px !important;
+  text-align: left !important;
+}
+
+.quest-recap-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #93c5fd !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.6px !important;
+  margin-bottom: 8px !important;
+}
+
+.quest-recap-item {
+  color: #cbd5e1 !important;
+  font-size: 13px !important;
+  margin-bottom: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.quest-success-btns {
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+}
+
+.quest-wa-instant-btn {
+  background: #22c55e !important;
+  color: #052e16 !important;
+  font-weight: 700 !important;
+  border-radius: 11px !important;
+  padding: 13px 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 14px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+}
+
+.quest-wa-instant-btn:hover {
+  filter: brightness(1.1) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.35) !important;
+}
+
+button.quest-restart-btn,
+.quest-restart-btn {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 1.5px solid rgba(148, 190, 255, 0.22) !important;
+  color: #cbd5e1 !important;
+  border-radius: 11px !important;
+  padding: 13px 24px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-family: inherit !important;
+}
+
+button.quest-restart-btn:hover {
+  background: rgba(30, 48, 79, 0.9) !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 980px) {
+  .contact-page .contact-grid,
+  .contact-grid {
+    grid-template-columns: 1fr !important;
+    width: min(100% - 32px, 720px) !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .quest-form-grid,
+  .quest-options-grid,
+  .quest-timeline-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .quest-summary-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .quest-summary-label {
+    min-width: unset !important;
+  }
+
+  .quest-summary-content {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .quest-summary-value {
+    text-align: left !important;
+  }
+
+  .quest-actions {
+    flex-direction: column-reverse !important;
+  }
+
+  button.quest-btn-back,
+  button.quest-btn-next {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
