@@ -1,15 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import BrandMark from "./BrandMark";
 
 function Navbar() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+      if (window.scrollY > 20 && isMenuOpen) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [location.pathname, isMenuOpen]);
 
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <nav className={`nav${isMenuOpen ? " menu-open" : ""}`}>
+    <header className={`nav-wrapper${isScrolled ? " is-scrolled" : ""}`}>
+      <nav
+        className={`nav${isScrolled ? " nav-scrolled" : ""}${isMenuOpen ? " menu-open" : ""}`}
+        aria-label="Primary Navigation"
+      >
       <Link className="nav-logo" to="/" onClick={closeMenu} aria-label="NextGenies home">
         <BrandMark />
         <span className="nav-brand-name">NextGenies</span>
@@ -69,7 +87,8 @@ function Navbar() {
         <span />
         <span />
       </button>
-    </nav>
+      </nav>
+    </header>
   );
 }
 

@@ -481,7 +481,11 @@ function Contact() {
           fullName: formData.fullName.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim() || "Not provided",
+          company: formData.company.trim(),
           service: formData.serviceName,
+          needOption: formData.serviceOptionTitle,
+          scopePreference: formData.scopeLabel,
+          timeline: formData.timelineLabel,
           message: summaryMessage,
         }),
       });

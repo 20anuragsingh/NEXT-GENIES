@@ -3,13 +3,14 @@ import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
 import multer from "multer";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { initDatabase, db } from "./db.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -18,35 +19,11 @@ const app = express();
 const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === "production";
 
-const requiredDatabaseVariables = [
-  "DB_HOST",
-  "DB_NAME",
-  "DB_USER",
-  "DB_PASSWORD",
-  "ADMIN_USERNAME",
-  "ADMIN_PASSWORD",
-  "ADMIN_JWT_SECRET",
-];
-console.log("DB_HOST =", process.env.DB_HOST);
-console.log("DB_NAME =", process.env.DB_NAME);
-console.log("DB_USER =", process.env.DB_USER);
-console.log("DB_PASSWORD =", process.env.DB_PASSWORD ? "[CONFIGURED]" : "[MISSING]");
-
-// MySQL Pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
 // CORS
-const allowedOrigins = (process.env.FRONTEND_ORIGINS ||
-  "https://nextgenies.com,https://www.nextgenies.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173")
+const allowedOrigins = (
+  process.env.FRONTEND_ORIGINS ||
+  "https://nextgenies.com,https://www.nextgenies.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173"
+)
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -59,12 +36,12 @@ const emailRecipients = [
 ].filter(Boolean);
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
+  host: process.env.SMTP_HOST || "localhost",
   port: Number(process.env.SMTP_PORT || 587),
   secure: (process.env.SMTP_PORT || "587") === "465",
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.SMTP_USER || "",
+    pass: process.env.SMTP_PASS || "",
   },
 });
 
@@ -75,22 +52,20 @@ async function sendContactEmails({ fullName, email, phone, service, message }) {
     !process.env.SMTP_PASS ||
     !emailRecipients.length
   ) {
-    throw new Error(
-      "Email configuration is missing. Please configure SMTP_HOST, SMTP_USER, SMTP_PASS, and EMAIL_TO."
-    );
+    return; // Silently skip if email is not configured
   }
 
   const escapeHtml = (value) =>
-    String(value).replace(
+    String(value || "").replace(
       /[&<>"']/g,
-      (character) =>
+      (char) =>
         ({
           "&": "&amp;",
           "<": "&lt;",
           ">": "&gt;",
           '"': "&quot;",
           "'": "&#39;",
-        })[character],
+        })[char]
     );
 
   const safeName = escapeHtml(fullName);
@@ -118,12 +93,12 @@ async function sendContactEmails({ fullName, email, phone, service, message }) {
 
   const adminHtml = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937;">
-      <h2 style="color: #111827;">New contact form submission</h2>
+      <h2 style="color: #111827;">New Project Inquiry</h2>
       <p><strong>Name:</strong> ${safeName}</p>
       <p><strong>Email:</strong> ${safeEmail}</p>
       <p><strong>Phone:</strong> ${safePhone}</p>
       <p><strong>Service:</strong> ${safeService}</p>
-      <p><strong>Message:</strong></p>
+      <p><strong>Message / Scope:</strong></p>
       <p>${safeMessage}</p>
     </div>
   `;
@@ -145,7 +120,7 @@ async function sendContactEmails({ fullName, email, phone, service, message }) {
   });
 }
 
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(
   cors({
@@ -153,7 +128,6 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-
       callback(null, false);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -161,19 +135,19 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "50kb" }));
 
 const contactRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 5,
+  limit: 25,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { message: "Too many contact requests. Please try again later." },
+  message: { message: "Too many contact requests. Please wait a few minutes and try again." },
 });
 
 const adminLoginRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: 20,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { message: "Too many login attempts. Please try again later." },
@@ -190,6 +164,10 @@ const blogUpload = multer({
   },
 });
 
+const adminUsername = process.env.ADMIN_USERNAME || "admin";
+const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+const adminJwtSecret = process.env.ADMIN_JWT_SECRET || "nextgenies_jwt_secret_dev_key_2026";
+
 function authenticateAdmin(req, res, next) {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
 
@@ -198,7 +176,7 @@ function authenticateAdmin(req, res, next) {
   }
 
   try {
-    jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+    jwt.verify(token, adminJwtSecret);
     next();
   } catch {
     res.status(401).json({ message: "Your admin session has expired." });
@@ -224,21 +202,147 @@ function removeBlogImage(imageUrl) {
   if (imagePath.startsWith(uploadsPath)) fs.unlink(imagePath, () => {});
 }
 
+// ============================================================================
+// HEALTH CHECK
+// ============================================================================
+app.get("/api/health", async (_req, res) => {
+  try {
+    const health = await db.healthCheck();
+    res.json({
+      status: "ok",
+      database: health.driver,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+});
+
+// ============================================================================
+// CONTACT FORM SUBMISSION (CONNECT TO DATABASE)
+// ============================================================================
+app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
+  try {
+    const readField = (value) => (typeof value === "string" ? value.trim() : "");
+
+    const fullName = readField(req.body?.fullName);
+    const email = readField(req.body?.email).toLowerCase();
+    const phone = readField(req.body?.phone) || "Not provided";
+    const company = readField(req.body?.company) || "";
+    const service = readField(req.body?.service);
+    const needOption = readField(req.body?.needOption) || "";
+    const scopePreference = readField(req.body?.scopePreference) || "";
+    const timeline = readField(req.body?.timeline) || "";
+    const message = readField(req.body?.message);
+
+    // Validation
+    if (
+      !fullName ||
+      !email ||
+      !service ||
+      !message ||
+      fullName.length > 100 ||
+      email.length > 255 ||
+      phone.length > 50 ||
+      company.length > 150 ||
+      service.length > 100 ||
+      message.length > 15000 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      return res.status(400).json({
+        message: "Please provide a valid full name, email, service, and message.",
+      });
+    }
+
+    // Insert into database (MySQL or SQLite)
+    const [result] = await db.execute(
+      `INSERT INTO contacts 
+      (full_name, email, phone, company, service, need_option, scope_preference, timeline, message)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [fullName, email, phone, company, service, needOption, scopePreference, timeline, message]
+    );
+
+    // Send notifications if SMTP configured
+    let emailSent = false;
+    try {
+      await sendContactEmails({ fullName, email, phone, service, message });
+      emailSent = true;
+    } catch (emailError) {
+      console.warn("Notice: SMTP email notification skipped or failed:", emailError.message);
+    }
+
+    console.log(`📥 Contact lead #${result.insertId} saved to database [${db.driver}]: ${fullName} (${email})`);
+
+    res.status(201).json({
+      message: "Message received and saved to database successfully!",
+      id: result.insertId,
+      database: db.driver,
+      emailSent,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================================
+// ADMIN CONTACTS MANAGEMENT (View all received leads)
+// ============================================================================
+app.get("/api/admin/contacts", authenticateAdmin, async (_req, res, next) => {
+  try {
+    const [contacts] = await db.query(
+      `SELECT id, 
+              full_name AS fullName, 
+              email, 
+              phone, 
+              company, 
+              service, 
+              need_option AS needOption, 
+              scope_preference AS scopePreference, 
+              timeline, 
+              message, 
+              created_at AS createdAt 
+       FROM contacts 
+       ORDER BY id DESC`
+    );
+    res.json(contacts);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/api/admin/contacts/:id", authenticateAdmin, async (req, res, next) => {
+  try {
+    await db.execute("DELETE FROM contacts WHERE id = ?", [req.params.id]);
+    res.json({ message: "Inquiry deleted successfully." });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================================
+// ADMIN AUTHENTICATION
+// ============================================================================
 app.post("/api/admin/login", adminLoginRateLimit, (req, res) => {
   const username = typeof req.body?.username === "string" ? req.body.username.trim() : "";
   const password = typeof req.body?.password === "string" ? req.body.password : "";
 
-  if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
+  if (username !== adminUsername || password !== adminPassword) {
     return res.status(401).json({ message: "Invalid admin credentials." });
   }
 
-  const token = jwt.sign({ role: "admin", username }, process.env.ADMIN_JWT_SECRET, { expiresIn: "8h" });
+  const token = jwt.sign({ role: "admin", username }, adminJwtSecret, { expiresIn: "8h" });
   res.json({ token });
 });
 
+// ============================================================================
+// BLOGS API
+// ============================================================================
 app.get("/api/blogs", async (_req, res, next) => {
   try {
-    const [blogs] = await pool.query(
+    const [blogs] = await db.query(
       "SELECT id, title, slug, description, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
     );
     res.json(blogs);
@@ -249,7 +353,7 @@ app.get("/api/blogs", async (_req, res, next) => {
 
 app.get("/api/blogs/:id/image", async (req, res, next) => {
   try {
-    const [blogs] = await pool.query(
+    const [blogs] = await db.query(
       "SELECT image_data AS imageData, image_mime_type AS imageMimeType, image_url AS imageUrl FROM blogs WHERE id = ? AND is_published = 1 LIMIT 1",
       [req.params.id]
     );
@@ -268,7 +372,7 @@ app.get("/api/blogs/:id/image", async (req, res, next) => {
 
 app.get("/api/blogs/:slug", async (req, res, next) => {
   try {
-    const [blogs] = await pool.query(
+    const [blogs] = await db.query(
       "SELECT id, title, slug, description, content, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE slug = ? AND is_published = 1 LIMIT 1",
       [req.params.slug]
     );
@@ -282,7 +386,7 @@ app.get("/api/blogs/:slug", async (req, res, next) => {
 
 app.get("/api/admin/blogs", authenticateAdmin, async (_req, res, next) => {
   try {
-    const [blogs] = await pool.query(
+    const [blogs] = await db.query(
       "SELECT id, title, slug, description, content, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, is_published AS isPublished, published_at AS publishedAt, created_at AS createdAt FROM blogs ORDER BY created_at DESC"
     );
     res.json(blogs);
@@ -298,7 +402,7 @@ app.post("/api/admin/blogs", authenticateAdmin, blogUpload.single("image"), asyn
     const content = readBlogField(req.body?.content, 50000);
     const author = readBlogField(req.body?.author, 100) || "NextGenies";
     const slug = slugify(readBlogField(req.body?.slug, 180) || title);
-    const isPublished = req.body?.isPublished === "true" || req.body?.isPublished === "1";
+    const isPublished = req.body?.isPublished === "true" || req.body?.isPublished === "1" || req.body?.isPublished === true;
 
     if (!title || !description || !content || !slug) {
       return res.status(400).json({ message: "Title, description, content, and a valid slug are required." });
@@ -306,96 +410,26 @@ app.post("/api/admin/blogs", authenticateAdmin, blogUpload.single("image"), asyn
 
     const imageData = req.file?.buffer || null;
     const imageMimeType = req.file?.mimetype || null;
-    const [result] = await pool.execute(
+    const [result] = await db.execute(
       `INSERT INTO blogs (title, slug, description, content, image_url, image_data, image_mime_type, author, is_published, published_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, slug, description, content, null, imageData, imageMimeType, author, isPublished, isPublished ? new Date() : null]
+      [title, slug, description, content, null, imageData, imageMimeType, author, isPublished ? 1 : 0, isPublished ? new Date().toISOString() : null]
     );
     res.status(201).json({ id: result.insertId, message: "Blog published successfully." });
   } catch (error) {
-    if (error.code === "ER_DUP_ENTRY") return res.status(409).json({ message: "A blog with that slug already exists." });
+    if (error.code === "ER_DUP_ENTRY" || String(error.message).includes("UNIQUE")) {
+      return res.status(409).json({ message: "A blog with that slug already exists." });
+    }
     next(error);
   }
 });
 
 app.delete("/api/admin/blogs/:id", authenticateAdmin, async (req, res, next) => {
   try {
-    const [rows] = await pool.query("SELECT image_url AS imageUrl FROM blogs WHERE id = ?", [req.params.id]);
-    await pool.execute("DELETE FROM blogs WHERE id = ?", [req.params.id]);
+    const [rows] = await db.query("SELECT image_url AS imageUrl FROM blogs WHERE id = ?", [req.params.id]);
+    await db.execute("DELETE FROM blogs WHERE id = ?", [req.params.id]);
     removeBlogImage(rows[0]?.imageUrl);
     res.json({ message: "Blog deleted." });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Health Check
-app.get("/api/health", async (_req, res) => {
-  try {
-    await pool.query("SELECT 1");
-
-    res.json({
-      status: "ok",
-      database: "connected",
-    });
-  } catch {
-    res.status(500).json({
-      status: "error",
-      database: "disconnected",
-      message: "Database health check failed.",
-    });
-  }
-});
-
-// Contact Form
-app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
-  try {
-    const readField = (value) => (typeof value === "string" ? value.trim() : "");
-    const fullName = readField(req.body?.fullName);
-    const email = readField(req.body?.email).toLowerCase();
-    const phone = readField(req.body?.phone);
-    const service = readField(req.body?.service);
-    const message = readField(req.body?.message);
-
-    if (
-      !fullName ||
-      !email ||
-      !phone ||
-      !service ||
-      !message ||
-      fullName.length > 100 ||
-      email.length > 255 ||
-      phone.length > 30 ||
-      service.length > 100 ||
-      message.length > 5000 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-      /[\r\n]/.test(`${fullName}${email}${phone}${service}`)
-    ) {
-      return res.status(400).json({
-        message: "Please provide valid contact details and a message.",
-      });
-    }
-
-    const [result] = await pool.execute(
-      `INSERT INTO contacts 
-      (full_name, email, phone, service, message)
-      VALUES (?, ?, ?, ?, ?)`,
-      [fullName, email, phone, service, message]
-    );
-
-    let emailSent = true;
-    try {
-      await sendContactEmails({ fullName, email, phone, service, message });
-    } catch (emailError) {
-      emailSent = false;
-      console.error("Failed to send contact notification email:", emailError.message);
-    }
-
-    res.status(201).json({
-      message: "Message received",
-      id: result.insertId,
-      emailSent,
-    });
   } catch (error) {
     next(error);
   }
@@ -415,7 +449,6 @@ app.use("/uploads", express.static(uploadsPath));
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 
-  // SPA fallback for non-API routes (Express 5 compatible)
   app.get("/{*splat}", (req, res, next) => {
     if (req.path.startsWith("/api")) {
       return next();
@@ -438,93 +471,25 @@ app.use((error, _req, res, next) => {
 });
 
 async function startServer() {
-  const missing = requiredDatabaseVariables.filter(
-    (key) => !process.env[key]
-  );
-
-  if (missing.length) {
-    throw new Error(`Missing env variables: ${missing.join(", ")}`);
-  }
-
   try {
-    await pool.query("SELECT 1");
-    console.log("✅ MySQL Connected");
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS contacts (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        full_name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        phone VARCHAR(30) NOT NULL,
-        service VARCHAR(100) NOT NULL,
-        message TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS blogs (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        title VARCHAR(180) NOT NULL,
-        slug VARCHAR(180) NOT NULL UNIQUE,
-        description VARCHAR(320) NOT NULL,
-        content LONGTEXT NOT NULL,
-        image_url VARCHAR(500) DEFAULT NULL,
-        image_data MEDIUMBLOB DEFAULT NULL,
-        image_mime_type VARCHAR(100) DEFAULT NULL,
-        author VARCHAR(100) NOT NULL DEFAULT 'NextGenies',
-        is_published BOOLEAN NOT NULL DEFAULT FALSE,
-        published_at TIMESTAMP NULL DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
-    const [blogColumns] = await pool.query(
-      "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'blogs'",
-      [process.env.DB_NAME]
-    );
-    const blogColumnNames = new Set(blogColumns.map((column) => column.COLUMN_NAME));
-    if (!blogColumnNames.has("image_data")) {
-      await pool.query("ALTER TABLE blogs ADD COLUMN image_data MEDIUMBLOB DEFAULT NULL");
-    }
-    if (!blogColumnNames.has("image_mime_type")) {
-      await pool.query("ALTER TABLE blogs ADD COLUMN image_mime_type VARCHAR(100) DEFAULT NULL");
-    }
-
-    try {
-      const [columns] = await pool.query(
-        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'contacts' AND COLUMN_NAME = 'phone'",
-        [process.env.DB_NAME]
-      );
-      if (columns.length === 0) {
-        await pool.query(
-          "ALTER TABLE contacts ADD COLUMN phone VARCHAR(30) NOT NULL DEFAULT ''"
-        );
-      }
-    } catch (migrationErr) {
-      console.warn("Column migration notice:", migrationErr.message);
-    }
+    const { driver } = await initDatabase();
 
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
       try {
         await transporter.verify();
         console.log("✅ SMTP Connected");
       } catch (smtpError) {
-        console.error("❌ SMTP ERROR");
-        console.error(smtpError);
+        console.warn("⚠️ SMTP notice:", smtpError.message);
       }
     } else {
-      console.log("⚠️ SMTP is not configured. Contact emails will not be sent.");
+      console.log("ℹ️ SMTP is not configured. Form submissions will be saved in the database only.");
     }
 
     app.listen(port, () => {
-      console.log(`🚀 Server running on port ${port}`);
+      console.log(`🚀 NextGenies API running on http://localhost:${port} [Database: ${driver}]`);
     });
   } catch (err) {
-    console.error("❌ DATABASE ERROR");
-    console.error(err);
+    console.error("❌ DATABASE / SERVER STARTUP ERROR:", err);
     process.exit(1);
   }
 }

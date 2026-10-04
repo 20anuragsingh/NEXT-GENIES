@@ -5820,7 +5820,6 @@ body {
 }
 
 .breadcrumbs,
-.nav,
 .home-page > .hero,
 .trust,
 .home-page > .section,
@@ -5844,7 +5843,6 @@ body {
   padding-inline: clamp(18px, 3.5vw, 52px);
 }
 
-.nav,
 .trust,
 .home-page > .hero,
 .home-page > .section,
@@ -5858,5 +5856,99 @@ body {
 .admin-page,
 .footer {
   border-radius: 0;
+}
+
+/* ==========================================================================
+   STICKY & SHRINK-ON-SCROLL NAVBAR
+   ========================================================================== */
+.nav-wrapper {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1000;
+  pointer-events: none;
+  padding: 0;
+  margin: 0;
+  transition: padding-top 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.nav-wrapper.is-scrolled {
+  padding-top: 12px;
+}
+
+.nav-wrapper .nav {
+  pointer-events: auto;
+  position: relative !important;
+  top: auto !important;
+  min-height: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 16px clamp(20px, 4vw, 48px) !important;
+  background: rgba(11, 19, 36, 0.95) !important;
+  border-bottom: 1px solid rgba(148, 190, 255, 0.12) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  box-sizing: border-box !important;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-radius 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.35s ease,
+              border-color 0.35s ease,
+              box-shadow 0.35s ease !important;
+}
+
+/* Shrunk floating island pill on scroll ("side side se halki sa shrink") */
+.nav-wrapper.is-scrolled .nav,
+.nav-wrapper .nav.nav-scrolled {
+  width: min(calc(100% - 48px), 1220px) !important;
+  max-width: 1220px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 10px clamp(16px, 2.5vw, 28px) !important;
+  border-radius: 999px !important;
+  background: rgba(11, 19, 36, 0.88) !important;
+  border: 1px solid rgba(148, 190, 255, 0.24) !important;
+  box-shadow: 0 16px 36px rgba(2, 8, 23, 0.45), 0 0 20px rgba(59, 130, 246, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+}
+
+@media (max-width: 800px) {
+  .nav-wrapper.is-scrolled {
+    padding-top: 10px;
+  }
+
+  .nav-wrapper.is-scrolled .nav,
+  .nav-wrapper .nav.nav-scrolled {
+    width: calc(100% - 24px) !important;
+    border-radius: 20px !important;
+    padding: 9px 16px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .nav-wrapper.is-scrolled {
+    padding-top: 8px;
+  }
+
+  .nav-wrapper.is-scrolled .nav,
+  .nav-wrapper .nav.nav-scrolled {
+    width: calc(100% - 16px) !important;
+    border-radius: 18px !important;
+    padding: 8px 14px !important;
+  }
 }
 

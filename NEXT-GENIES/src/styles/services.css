@@ -1,0 +1,532 @@
+/* ==========================================================================
+   NEXTGENIES SERVICES PAGE SCROLL ANIMATION & TIMELINE SYSTEM
+   ========================================================================== */
+
+/* Services Page Container */
+.services-page {
+  position: relative;
+  overflow: visible !important;
+  background: radial-gradient(ellipse at 88% 5%, rgba(59, 130, 246, 0.14), transparent 32rem),
+              radial-gradient(ellipse at 12% 45%, rgba(37, 99, 235, 0.1), transparent 36rem),
+              radial-gradient(ellipse at 75% 85%, rgba(56, 189, 248, 0.08), transparent 30rem),
+              #0f172a !important;
+  padding-bottom: 60px;
+}
+
+/* Header section */
+.services-header {
+  padding: clamp(48px, 6vw, 80px) clamp(20px, 4vw, 48px) 32px !important;
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.services-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #60a5fa;
+  background: rgba(37, 99, 235, 0.16);
+  border: 1px solid rgba(59, 130, 246, 0.32);
+  padding: 5px 16px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+.services-header h1 {
+  font-size: clamp(34px, 4.5vw, 56px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -1px !important;
+  color: #ffffff !important;
+  line-height: 1.15 !important;
+  margin-bottom: 16px !important;
+}
+
+.services-header h1 span {
+  background: linear-gradient(90deg, #60a5fa 0%, #38bdf8 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.services-header p {
+  color: #94a3b8 !important;
+  font-size: clamp(14px, 1.4vw, 16px) !important;
+  line-height: 1.65 !important;
+  margin: 0 auto !important;
+  max-width: 580px !important;
+}
+
+/* ==========================================================================
+   Sticky Quick-Jump Service Pills (Navigation on Scroll)
+   ========================================================================== */
+.services-quick-nav-wrap {
+  position: sticky;
+  top: 76px;
+  z-index: 100;
+  width: 100%;
+  padding: 8px clamp(16px, 3vw, 32px);
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.services-quick-nav {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(148, 190, 255, 0.18);
+  border-radius: 999px;
+  box-shadow: 0 14px 34px rgba(2, 8, 23, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.services-quick-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.services-nav-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+.services-nav-btn:hover {
+  color: #ffffff;
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.24);
+}
+
+.services-nav-btn.is-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  border-color: rgba(96, 165, 250, 0.45);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.services-nav-btn .btn-num {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.8;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.services-nav-btn.is-active .btn-num {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Services Scroll Timeline & Container Layout
+   ========================================================================== */
+.services-container {
+  position: relative;
+  width: min(100% - 40px, 1180px);
+  margin: 0 auto;
+  padding: 10px 0 60px;
+}
+
+/* Timeline wrap */
+.services-timeline-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+/* Vertical guide line on desktop */
+@media (min-width: 901px) {
+  .services-timeline-wrap::before {
+    content: "";
+    position: absolute;
+    top: 36px;
+    bottom: 36px;
+    left: 27px;
+    width: 2px;
+    background: rgba(148, 190, 255, 0.12);
+    z-index: 1;
+  }
+
+  .services-timeline-bar {
+    position: absolute;
+    top: 36px;
+    left: 27px;
+    width: 2px;
+    background: linear-gradient(180deg, #2563eb, #60a5fa, #38bdf8);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+    z-index: 2;
+    transition: height 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* ==========================================================================
+   Service Card Wrapper & Timeline Node
+   ========================================================================== */
+.service-card-wrapper {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 28px;
+  align-items: flex-start;
+}
+
+/* Timeline circular node */
+.service-timeline-node {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 3;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.96);
+  border: 2px solid rgba(148, 190, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: #64748b;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 24px;
+  font-family: inherit;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+.service-timeline-node:hover {
+  border-color: rgba(96, 165, 250, 0.6);
+  color: #ffffff;
+  transform: scale(1.06);
+}
+
+/* Active node state when card is in focus */
+.service-card-wrapper.is-active .service-timeline-node {
+  border-color: #38bdf8;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.65), 0 0 45px rgba(37, 99, 235, 0.35);
+  transform: scale(1.12);
+}
+
+.service-card-wrapper.is-active .service-timeline-node::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(56, 189, 248, 0.5);
+  animation: nodePulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes nodePulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Outer Service Detail Card (Glassmorphism & Scroll Entrance)
+   ========================================================================== */
+.service-detail-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr) !important;
+  gap: clamp(24px, 4vw, 48px) !important;
+  align-items: center !important;
+  padding: clamp(28px, 4vw, 46px) !important;
+  border-radius: 24px !important;
+  background: linear-gradient(145deg, rgba(20, 32, 54, 0.94), rgba(11, 18, 32, 0.98)) !important;
+  border: 1.5px solid rgba(148, 190, 255, 0.16) !important;
+  box-shadow: 0 20px 50px rgba(2, 8, 23, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  box-sizing: border-box !important;
+  opacity: 0.5;
+  transform: translateY(32px) scale(0.98);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.35s ease,
+              box-shadow 0.35s ease,
+              background 0.35s ease !important;
+  scroll-margin-top: 140px;
+}
+
+/* Card becomes visible when scrolled into view */
+.service-detail-card.is-visible {
+  opacity: 0.85 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+/* Card is focused when in the center of the viewport */
+.service-card-wrapper.is-active .service-detail-card,
+.service-detail-card.is-active,
+.service-detail-card:hover {
+  opacity: 1 !important;
+  border-color: rgba(96, 165, 250, 0.55) !important;
+  background: linear-gradient(145deg, rgba(26, 42, 74, 0.98), rgba(13, 22, 40, 0.98)) !important;
+  box-shadow: 0 28px 70px rgba(2, 8, 23, 0.55), 0 0 32px rgba(59, 130, 246, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  transform: translateY(-3px) scale(1.008) !important;
+}
+
+/* ==========================================================================
+   Typography, Badges & Checklists
+   ========================================================================== */
+.service-detail-content {
+  min-width: 0;
+}
+
+.service-detail-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(37, 99, 235, 0.16) !important;
+  border: 1px solid rgba(59, 130, 246, 0.32) !important;
+  border-radius: 999px !important;
+  padding: 4px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #60a5fa !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.6px !important;
+  margin-bottom: 12px !important;
+}
+
+.service-detail-content h2 {
+  color: #ffffff !important;
+  font-size: clamp(22px, 2.4vw, 30px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.6px !important;
+  line-height: 1.25 !important;
+  margin: 0 0 12px 0 !important;
+}
+
+.service-detail-content > p {
+  color: #94a3b8 !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+  margin: 0 0 18px 0 !important;
+  max-width: 580px !important;
+}
+
+.service-feature-list {
+  display: grid !important;
+  gap: 10px !important;
+  list-style: none !important;
+  margin-top: 14px !important;
+  padding: 0 !important;
+}
+
+.service-feature-list li {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #cbd5e1 !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  transition: transform 0.2s ease, color 0.2s ease !important;
+}
+
+.service-card-wrapper.is-active .service-feature-list li,
+.service-detail-card:hover .service-feature-list li {
+  color: #e2e8f0 !important;
+}
+
+.service-feature-list li:hover {
+  color: #ffffff !important;
+  transform: translateX(4px) !important;
+}
+
+.service-check {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: rgba(37, 99, 235, 0.2) !important;
+  border: 1px solid rgba(59, 130, 246, 0.38) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  color: #60a5fa !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25) !important;
+}
+
+.service-check svg {
+  width: 12px !important;
+  height: 12px !important;
+  stroke: #60a5fa !important;
+  stroke-width: 2.5 !important;
+  fill: none !important;
+}
+
+/* ==========================================================================
+   Service Art Floating Animation
+   ========================================================================== */
+.service-art {
+  width: 100% !important;
+  min-height: 230px !important;
+  border-radius: 20px !important;
+  background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.22), rgba(15, 23, 42, 0.85) 72%) !important;
+  border: 1px solid rgba(148, 190, 255, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  box-shadow: inset 0 0 30px rgba(37, 99, 235, 0.12) !important;
+  animation: serviceArtFloat 5s ease-in-out infinite !important;
+  transition: all 0.35s ease !important;
+}
+
+@keyframes serviceArtFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+.service-art svg {
+  width: 100% !important;
+  max-width: 170px !important;
+  height: auto !important;
+  max-height: 170px !important;
+  stroke: #60a5fa !important;
+  stroke-width: 2 !important;
+  fill: none !important;
+  filter: drop-shadow(0 0 14px rgba(59, 130, 246, 0.45)) !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease !important;
+}
+
+.service-card-wrapper.is-active .service-art svg,
+.service-detail-card:hover .service-art svg {
+  transform: scale(1.06) !important;
+  filter: drop-shadow(0 0 24px rgba(56, 189, 248, 0.75)) !important;
+}
+
+/* ==========================================================================
+   Bottom Services CTA
+   ========================================================================== */
+.services-cta {
+  position: relative;
+  border: 1px solid rgba(100, 145, 215, 0.22) !important;
+  border-radius: 28px !important;
+  background: radial-gradient(ellipse at 50% 0%, rgba(37, 99, 235, 0.28), transparent 65%),
+              linear-gradient(140deg, rgba(17, 34, 71, 0.96), rgba(19, 48, 100, 0.88)) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  margin: 30px auto 60px !important;
+  width: min(100% - 40px, 1100px) !important;
+  padding: clamp(40px, 6vw, 68px) clamp(24px, 5vw, 56px) !important;
+  text-align: center;
+}
+
+.services-cta h2 {
+  color: #ffffff !important;
+  font-size: clamp(26px, 3.5vw, 42px) !important;
+  font-weight: 800 !important;
+  margin: 12px auto 14px !important;
+}
+
+.services-cta p {
+  color: #cbd5e1 !important;
+  font-size: 15px !important;
+  max-width: 520px;
+  margin: 0 auto 26px !important;
+}
+
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+@media (max-width: 900px) {
+  .services-quick-nav-wrap {
+    top: 68px;
+    padding: 6px 12px;
+  }
+
+  .service-card-wrapper {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .service-timeline-node {
+    display: none;
+  }
+
+  .services-timeline-wrap::before,
+  .services-timeline-bar {
+    display: none;
+  }
+
+  .service-detail-card {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    opacity: 0.85 !important;
+    transform: none !important;
+  }
+
+  .service-art {
+    min-height: 200px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .services-quick-nav {
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .services-nav-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
+  .service-detail-card {
+    padding: 22px 18px !important;
+    border-radius: 18px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-detail-card {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .service-art {
+    animation: none !important;
+  }
+}

@@ -27,7 +27,6 @@ function App() {
       ".section",
       ".cta-section",
       ".services-header",
-      ".service-detail-card",
       ".services-cta",
       ".about-hero",
       ".mission-card",
