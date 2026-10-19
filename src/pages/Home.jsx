@@ -43,27 +43,27 @@ const STEPS = [
 
 const CASE_STUDIES = [
   {
-    client: "Aura Lifestyle",
+    client: "D2C Brand",
     category: "Content & Social",
-    headline: "+340% reach & viral short-form audience growth",
-    metric: "1.4M+",
-    metricLabel: "Reel impressions in 60 days",
+    headline: "Consistent Content, Stronger Reach",
+    metric: "Organic Growth",
+    metricLabel: "A content strategy built to increase reach, engagement, and brand visibility.",
     tags: ["Content Creation", "Reels", "Strategy"],
   },
   {
-    client: "Kore Fintech",
+    client: "Fintech Startup",
     category: "Web Development",
-    headline: "Landing page conversion increased from 1.8% to 4.6%",
-    metric: "2.5×",
-    metricLabel: "Lead-to-signup conversion",
+    headline: "Conversion-Focused Design",
+    metric: "From Clicks to Customers",
+    metricLabel: "A streamlined digital experience designed to turn visitors into customers.",
     tags: ["Web Design", "React", "More enquiries"],
   },
   {
-    client: "Nova Botanics",
+    client: "D2C Brand",
     category: "Branding & Launch",
-    headline: "Full visual identity and DTC storefront launch",
-    metric: "₹18L+",
-    metricLabel: "First-month launch revenue",
+    headline: "Built to Stand Out, Designed to Scale",
+    metric: "Brand Launch",
+    metricLabel: "A cohesive brand identity and storefront built for a strong market presence.",
     tags: ["Brand Identity", "Design System"],
   },
 ];
@@ -268,14 +268,14 @@ export default function Home() {
           <div className="container hero-grid">
             <div className="hero-copy">
               <div className="pill hero-pill">
-                <span className="live-dot" /> Built for businesses in India
+                <span className="live-dot" /> Your Growth Partner for the Digital Age
               </div>
               <h1 className="hero-title">
-                <span className="line l1">We help Indian businesses</span>
+                <span className="line l1">We help businesses</span>
                 <span className="line l2">
                   grow online with <RotatingWord />
                 </span>
-                <span className="line l3">work that brings customers.</span>
+                <span className="line l3">work that drives Results.</span>
               </h1>
               <p className="lead hero-lead">
                 Content, websites, branding and digital campaigns made for your market, your budget and your next stage of growth.

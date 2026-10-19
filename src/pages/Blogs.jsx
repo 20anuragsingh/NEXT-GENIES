@@ -34,20 +34,24 @@ function Cover({ blog, eager = false }) {
 function PostCard({ blog, featured = false, index = 0 }) {
   const href = `/blogs/${blog.slug}`;
   return (
-    <Reveal as="article" delay={(index % 3) * 80} className={`post-card neu-raised hover-lift${featured ? " featured" : ""}`}>
-      <Link to={href} className="post-cover" tabIndex={-1} aria-hidden="true">
+    <Reveal
+      as={Link}
+      to={href}
+      aria-label={`Read ${blog.title}`}
+      delay={(index % 3) * 80}
+      className={`post-card neu-raised hover-lift${featured ? " featured" : ""}`}
+    >
+      <div className="post-cover">
         <Cover blog={blog} eager={featured} />
-      </Link>
+      </div>
       <div className="post-body">
         <div className="post-meta">
           <span>{blog.author}</span>
           {formatDate(blog.publishedAt || blog.createdAt) && <span>{formatDate(blog.publishedAt || blog.createdAt)}</span>}
         </div>
-        <h2 className={featured ? "h2" : "h4"}>
-          <Link to={href}>{blog.title}</Link>
-        </h2>
+        <h2 className={featured ? "h2" : "h4"}>{blog.title}</h2>
         <p className="muted">{blog.description}</p>
-        <Link to={href} className="read-link">Read article <span aria-hidden="true">→</span></Link>
+        <span className="read-link">Read article <span aria-hidden="true">→</span></span>
       </div>
     </Reveal>
   );

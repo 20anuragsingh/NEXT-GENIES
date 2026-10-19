@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import nodemailer from "nodemailer";
 import multer from "multer";
+import sharp from "sharp";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
@@ -120,7 +121,12 @@ async function sendContactEmails({ fullName, email, phone, service, message }) {
   });
 }
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 
 app.use(
   cors({
@@ -200,6 +206,62 @@ function removeBlogImage(imageUrl) {
   if (!imageUrl?.startsWith("/uploads/")) return;
   const imagePath = path.resolve(uploadsPath, path.basename(imageUrl));
   if (imagePath.startsWith(uploadsPath)) fs.unlink(imagePath, () => {});
+}
+
+/**
+ * Adjust blog cover image to 16:9 ratio (1200x675) so it displays fully
+ * without being cropped by `.cover` (object-fit: cover) on the frontend.
+ * - If already ~16:9, resizes directly to 1200x675.
+ * - If non-16:9 (portrait, square, 4:3, etc.), fits the entire image inside
+ *   1200x675 and creates a matching blurred backdrop from the image so
+ *   the entire original is visible and looks professional.
+ */
+async function adjustBlogImage(buffer) {
+  const metadata = await sharp(buffer).metadata();
+  const TARGET_WIDTH = 1200;
+  const TARGET_HEIGHT = 675; // Standard 16:9
+  const targetRatio = TARGET_WIDTH / TARGET_HEIGHT;
+  const width = metadata.width || TARGET_WIDTH;
+  const height = metadata.height || TARGET_HEIGHT;
+  const currentRatio = width / height;
+
+  // If already close to 16:9 (within 5% margin), resize directly
+  if (Math.abs(currentRatio - targetRatio) < 0.05) {
+    return await sharp(buffer)
+      .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: "cover" })
+      .jpeg({ quality: 90, mozjpeg: true })
+      .toBuffer();
+  }
+
+  // Preserve full original image inside 1200x675 canvas
+  const foreground = await sharp(buffer)
+    .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: "inside" })
+    .toBuffer();
+
+  let background;
+  if (metadata.hasAlpha) {
+    background = await sharp({
+      create: {
+        width: TARGET_WIDTH,
+        height: TARGET_HEIGHT,
+        channels: 4,
+        background: { r: 15, g: 23, b: 42, alpha: 1 },
+      },
+    })
+      .png()
+      .toBuffer();
+  } else {
+    background = await sharp(buffer)
+      .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: "cover" })
+      .blur(30)
+      .modulate({ brightness: 0.75 })
+      .toBuffer();
+  }
+
+  return await sharp(background)
+    .composite([{ input: foreground, gravity: "center" }])
+    .jpeg({ quality: 90, mozjpeg: true })
+    .toBuffer();
 }
 
 // ============================================================================
@@ -343,7 +405,7 @@ app.post("/api/admin/login", adminLoginRateLimit, (req, res) => {
 app.get("/api/blogs", async (_req, res, next) => {
   try {
     const [blogs] = await db.query(
-      "SELECT id, title, slug, description, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
+      "SELECT id, title, slug, description, COALESCE(image_url, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE NULL END) AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
     );
     res.json(blogs);
   } catch (error) {
@@ -354,7 +416,7 @@ app.get("/api/blogs", async (_req, res, next) => {
 app.get("/api/blogs/:id/image", async (req, res, next) => {
   try {
     const [blogs] = await db.query(
-      "SELECT image_data AS imageData, image_mime_type AS imageMimeType, image_url AS imageUrl FROM blogs WHERE id = ? AND is_published = 1 LIMIT 1",
+      "SELECT image_data AS imageData, image_mime_type AS imageMimeType, image_url AS imageUrl FROM blogs WHERE id = ? LIMIT 1",
       [req.params.id]
     );
 
@@ -362,7 +424,7 @@ app.get("/api/blogs/:id/image", async (req, res, next) => {
     if (!blog) return res.status(404).json({ message: "Image not found." });
     if (!blog.imageData) return res.redirect(blog.imageUrl || "/images/blog-placeholder.svg");
 
-    res.set("Content-Type", blog.imageMimeType || "application/octet-stream");
+    res.set("Content-Type", blog.imageMimeType || "image/jpeg");
     res.set("Cache-Control", "public, max-age=31536000, immutable");
     res.send(blog.imageData);
   } catch (error) {
@@ -373,7 +435,7 @@ app.get("/api/blogs/:id/image", async (req, res, next) => {
 app.get("/api/blogs/:slug", async (req, res, next) => {
   try {
     const [blogs] = await db.query(
-      "SELECT id, title, slug, description, content, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE slug = ? AND is_published = 1 LIMIT 1",
+      "SELECT id, title, slug, description, content, COALESCE(image_url, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE NULL END) AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE slug = ? AND is_published = 1 LIMIT 1",
       [req.params.slug]
     );
 
@@ -387,7 +449,7 @@ app.get("/api/blogs/:slug", async (req, res, next) => {
 app.get("/api/admin/blogs", authenticateAdmin, async (_req, res, next) => {
   try {
     const [blogs] = await db.query(
-      "SELECT id, title, slug, description, content, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE image_url END AS imageUrl, author, is_published AS isPublished, published_at AS publishedAt, created_at AS createdAt FROM blogs ORDER BY created_at DESC"
+      "SELECT id, title, slug, description, content, COALESCE(image_url, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE NULL END) AS imageUrl, author, is_published AS isPublished, published_at AS publishedAt, created_at AS createdAt FROM blogs ORDER BY created_at DESC"
     );
     res.json(blogs);
   } catch (error) {
@@ -408,12 +470,25 @@ app.post("/api/admin/blogs", authenticateAdmin, blogUpload.single("image"), asyn
       return res.status(400).json({ message: "Title, description, content, and a valid slug are required." });
     }
 
-    const imageData = req.file?.buffer || null;
-    const imageMimeType = req.file?.mimetype || null;
+    let imageData = null;
+    let imageMimeType = null;
+    let imageUrl = null;
+
+    if (req.file?.buffer) {
+      const processedBuffer = await adjustBlogImage(req.file.buffer);
+      imageData = processedBuffer;
+      imageMimeType = "image/jpeg";
+
+      const fileName = `blog-${slug}-${Date.now()}.jpg`;
+      const filePath = path.join(uploadsPath, fileName);
+      await fs.promises.writeFile(filePath, processedBuffer);
+      imageUrl = `/uploads/${fileName}`;
+    }
+
     const [result] = await db.execute(
       `INSERT INTO blogs (title, slug, description, content, image_url, image_data, image_mime_type, author, is_published, published_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, slug, description, content, null, imageData, imageMimeType, author, isPublished ? 1 : 0, isPublished ? new Date().toISOString() : null]
+      [title, slug, description, content, imageUrl, imageData, imageMimeType, author, isPublished ? 1 : 0, isPublished ? new Date().toISOString() : null]
     );
     res.status(201).json({ id: result.insertId, message: "Blog published successfully." });
   } catch (error) {

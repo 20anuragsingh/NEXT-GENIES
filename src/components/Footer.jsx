@@ -35,8 +35,8 @@ export default function Footer() {
             <h2 className="footer-title">Contact</h2>
             <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
             <a href={`tel:${CONTACT.phone.replace(/\s/g, "")}`}>{CONTACT.phone}</a>
-            <span>India — Remote-first</span>
-            <span>Mon – Sat, 10AM – 8PM IST</span>
+            <span>India - Remote-first</span>
+            <span>Mon - Sat, 10AM - 8PM IST</span>
           </div>
         </div>
 
