@@ -12,8 +12,8 @@ function upsert(selector, create, apply) {
 }
 
 const meta = (key, content, prop = false) =>
-  content &&
-  upsert(
+  content
+    ? upsert(
     `meta[${prop ? "property" : "name"}="${key}"]`,
     () => {
       const el = document.createElement("meta");
@@ -21,7 +21,8 @@ const meta = (key, content, prop = false) =>
       return el;
     },
     (el) => el.setAttribute("content", content),
-  );
+  )
+    : document.head.querySelector(`meta[${prop ? "property" : "name"}="${key}"]`)?.remove();
 
 /**
  * Per-page head management: title, description, canonical, Open Graph, Twitter and JSON-LD.
@@ -37,9 +38,13 @@ export default function SEO({
   robots = "index, follow",
   jsonLd,
   publishedTime,
+  canonical,
+  keywords,
 }) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Digital Growth Agency`;
-  const url = canonicalFor(path);
+  const fullTitle = title
+    ? title.endsWith(`| ${SITE_NAME}`) ? title : `${title} | ${SITE_NAME}`
+    : `${SITE_NAME} | Digital Growth Agency`;
+  const url = canonical || canonicalFor(path);
   const ogImage = image || DEFAULT_OG_IMAGE;
   const ld = jsonLd ? JSON.stringify(jsonLd) : "";
 
@@ -47,6 +52,7 @@ export default function SEO({
     document.title = fullTitle;
     meta("description", description);
     meta("robots", robots);
+    meta("keywords", keywords);
     upsert(
       'link[rel="canonical"]',
       () => Object.assign(document.createElement("link"), { rel: "canonical" }),
@@ -63,7 +69,7 @@ export default function SEO({
     meta("twitter:description", description);
     meta("twitter:image", ogImage);
     if (publishedTime) meta("article:published_time", publishedTime, true);
-  }, [fullTitle, description, url, ogType, ogImage, robots, publishedTime]);
+  }, [fullTitle, description, url, ogType, ogImage, robots, publishedTime, keywords]);
 
   useEffect(() => {
     const id = "ld-page";

@@ -14,6 +14,7 @@ export default function BlogPost() {
   const [state, setState] = useState({ slug: null, blog: null, error: null });
   const { blogs } = useBlogs();
   const [copied, setCopied] = useState(false);
+  const [faqOpen, setFaqOpen] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -59,6 +60,7 @@ export default function BlogPost() {
   const url = canonicalFor(`/blogs/${blog.slug}`);
   const related = blogs.filter((b) => b.slug !== blog.slug).slice(0, 3);
   const mins = readingTime(blog.content);
+  const faq = Array.isArray(blog.faq) ? blog.faq : [];
 
   const copy = async () => {
     try {
@@ -74,9 +76,12 @@ export default function BlogPost() {
   return (
     <>
       <SEO
-        title={blog.title}
-        description={blog.description}
+        title={blog.metaTitle || blog.title}
+        description={blog.metaDescription || blog.description}
         path={`/blogs/${blog.slug}`}
+        canonical={blog.canonicalUrl || undefined}
+        robots={blog.robotsMeta || "index, follow"}
+        keywords={[blog.focusKeywords, blog.additionalKeywords].filter(Boolean).join(", ")}
         ogType="article"
         image={blog.imageUrl ? absoluteMedia(blog.imageUrl) : undefined}
         publishedTime={date}
@@ -93,6 +98,15 @@ export default function BlogPost() {
             publisher: { "@type": "Organization", name: "NextGenies", logo: { "@type": "ImageObject", url: `${SITE_URL}/ng-logo-transparent.png` } },
             mainEntityOfPage: url,
           },
+          ...(faq.length ? [{
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faq.map((item) => ({
+              "@type": "Question",
+              name: item.question,
+              acceptedAnswer: { "@type": "Answer", text: item.answer },
+            })),
+          }] : []),
         ]}
       />
 
@@ -113,12 +127,30 @@ export default function BlogPost() {
           </header>
 
           {blog.imageUrl && (
-            <img className="post-hero neu-raised" src={mediaUrl(blog.imageUrl)} alt={blog.title} width="1200" height="675" decoding="async" />
+            <img className="post-hero neu-raised" src={mediaUrl(blog.imageUrl)} alt={blog.altText || blog.title} width="1200" height="675" decoding="async" />
           )}
 
           <div className="prose">
             <RichText content={blog.content} />
           </div>
+          {faq.length > 0 && (
+            <section className="prose" aria-labelledby="faq-heading">
+              <h2 id="faq-heading">Frequently asked questions</h2>
+              <div className="faq-list">
+                {faq.map((item, index) => {
+                  const isOpen = faqOpen === index;
+                  return (
+                    <div className={`faq-item neu-raised${isOpen ? " open" : ""}`} key={item.question}>
+                      <button type="button" className="faq-q" aria-expanded={isOpen} onClick={() => setFaqOpen(isOpen ? null : index)}>
+                        <span>{item.question}</span><span className="faq-icon" aria-hidden="true">{isOpen ? "−" : "+"}</span>
+                      </button>
+                      {isOpen && <div className="faq-a"><p>{item.answer}</p></div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <footer className="share glass">
             <span>Share this article</span>

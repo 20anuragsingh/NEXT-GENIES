@@ -81,14 +81,14 @@ export default function Blogs() {
   const [category, setCategory] = useState("All");
 
   const categories = useMemo(
-    () => ["All", ...new Set(blogs.map((blog) => blog.category).filter(Boolean))],
+    () => ["All", ...new Set(blogs.flatMap((blog) => Array.isArray(blog.categories) ? blog.categories : []).filter(Boolean))],
     [blogs],
   );
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     return blogs.filter((b) => {
-      const matchesCategory = category === "All" || b.category === category;
+      const matchesCategory = category === "All" || (Array.isArray(b.categories) && b.categories.includes(category));
       const matchesSearch = !term || `${b.title} ${b.description} ${b.author}`.toLowerCase().includes(term);
       return matchesCategory && matchesSearch;
     });

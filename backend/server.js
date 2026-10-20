@@ -21,13 +21,17 @@ const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === "production";
 
 // CORS
-const allowedOrigins = (
+const configuredOrigins = (
   process.env.FRONTEND_ORIGINS ||
   "https://nextgenies.com,https://www.nextgenies.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173"
 )
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const allowedOrigins = [...new Set([
+  ...configuredOrigins,
+  ...(isProduction ? [] : ["http://127.0.0.1:5173", "http://127.0.0.1:4173"]),
+])];
 
 const emailFrom = process.env.EMAIL_FROM || process.env.SMTP_USER;
 const emailRecipients = [
@@ -192,6 +196,77 @@ function authenticateAdmin(req, res, next) {
 function readBlogField(value, maxLength) {
   const field = typeof value === "string" ? value.trim() : "";
   return field.length <= maxLength ? field : "";
+}
+
+function readJsonList(value, maxItems = 30) {
+  const values = Array.isArray(value) ? value : String(value || "").split(",");
+  return [...new Set(values.map((item) => String(item).trim()).filter(Boolean))].slice(0, maxItems);
+}
+
+function readFaq(value) {
+  let items = value;
+  if (typeof value === "string") {
+    try { items = JSON.parse(value); } catch { items = []; }
+  }
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((item) => item && typeof item.question === "string" && typeof item.answer === "string")
+    .map((item) => ({ question: item.question.trim().slice(0, 300), answer: item.answer.trim().slice(0, 2000) }))
+    .filter((item) => item.question && item.answer)
+    .slice(0, 20);
+}
+
+const blogFields = `id, title, slug, description, content,
+  COALESCE(image_url, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE NULL END) AS imageUrl,
+  image_url AS storedImageUrl, image_data AS imageData, author, is_published AS isPublished,
+  published_at AS publishedAt, created_at AS createdAt, alt_text AS altText,
+  categories, tags, meta_title AS metaTitle, meta_description AS metaDescription,
+  focus_keywords AS focusKeywords, additional_keywords AS additionalKeywords,
+  robots_meta AS robotsMeta, canonical_url AS canonicalUrl, faq_schema AS faqSchema`;
+
+function blogResponse(blog) {
+  if (!blog) return blog;
+  const parse = (value, fallback) => {
+    try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }
+  };
+  return {
+    ...blog,
+    categories: parse(blog.categories, []),
+    tags: parse(blog.tags, []),
+    faq: parse(blog.faqSchema, []),
+    faqSchema: undefined,
+    imageData: undefined,
+    storedImageUrl: undefined,
+  };
+}
+
+function blogInput(body) {
+  const title = readBlogField(body?.title, 180);
+  const description = readBlogField(body?.description || body?.excerpt, 320);
+  const content = readBlogField(body?.content, 50000);
+  const slug = slugify(readBlogField(body?.slug, 180) || title);
+  const metaTitle = readBlogField(body?.metaTitle, 180);
+  const metaDescription = readBlogField(body?.metaDescription, 320);
+  const robotsMeta = readBlogField(body?.robotsMeta, 100) || "index, follow";
+  const canonicalUrl = readBlogField(body?.canonicalUrl, 500);
+  if (!title || !description || !content || !slug || !/^(index|noindex),\s*(follow|nofollow)$/.test(robotsMeta)) {
+    throw Object.assign(new Error("Title, excerpt, content, and valid SEO fields are required."), { status: 400 });
+  }
+  if (canonicalUrl && !/^https?:\/\/[^\s]+$/i.test(canonicalUrl)) {
+    throw Object.assign(new Error("Canonical URL must be an absolute HTTP(S) URL."), { status: 400 });
+  }
+  return {
+    title, description, content, slug, author: readBlogField(body?.author, 100) || "NextGenies",
+    altText: readBlogField(body?.altText, 180),
+    categories: JSON.stringify(readJsonList(body?.categories)),
+    tags: JSON.stringify(readJsonList(body?.tags)),
+    metaTitle: metaTitle || title,
+    metaDescription: metaDescription || description,
+    focusKeywords: readBlogField(body?.focusKeywords, 500),
+    additionalKeywords: readBlogField(body?.additionalKeywords, 500),
+    robotsMeta, canonicalUrl, faqSchema: JSON.stringify(readFaq(body?.faq)),
+    isPublished: body?.isPublished === "true" || body?.isPublished === "1" || body?.isPublished === true,
+  };
 }
 
 function slugify(value) {
@@ -405,9 +480,9 @@ app.post("/api/admin/login", adminLoginRateLimit, (req, res) => {
 app.get("/api/blogs", async (_req, res, next) => {
   try {
     const [blogs] = await db.query(
-      "SELECT id, title, slug, description, COALESCE(image_url, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE NULL END) AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
+      "SELECT id, title, slug, description, COALESCE(image_url, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE NULL END) AS imageUrl, author, categories, tags, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
     );
-    res.json(blogs);
+    res.json(blogs.map(blogResponse));
   } catch (error) {
     next(error);
   }
@@ -435,12 +510,12 @@ app.get("/api/blogs/:id/image", async (req, res, next) => {
 app.get("/api/blogs/:slug", async (req, res, next) => {
   try {
     const [blogs] = await db.query(
-      "SELECT id, title, slug, description, content, COALESCE(image_url, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE NULL END) AS imageUrl, author, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE slug = ? AND is_published = 1 LIMIT 1",
+      `SELECT ${blogFields} FROM blogs WHERE slug = ? AND is_published = 1 LIMIT 1`,
       [req.params.slug]
     );
 
     if (!blogs.length) return res.status(404).json({ message: "Blog not found." });
-    res.json(blogs[0]);
+    res.json(blogResponse(blogs[0]));
   } catch (error) {
     next(error);
   }
@@ -449,9 +524,9 @@ app.get("/api/blogs/:slug", async (req, res, next) => {
 app.get("/api/admin/blogs", authenticateAdmin, async (_req, res, next) => {
   try {
     const [blogs] = await db.query(
-      "SELECT id, title, slug, description, content, COALESCE(image_url, CASE WHEN image_data IS NOT NULL THEN CONCAT('/api/blogs/', id, '/image') ELSE NULL END) AS imageUrl, author, is_published AS isPublished, published_at AS publishedAt, created_at AS createdAt FROM blogs ORDER BY created_at DESC"
+      `SELECT ${blogFields} FROM blogs ORDER BY created_at DESC`
     );
-    res.json(blogs);
+    res.json(blogs.map(blogResponse));
   } catch (error) {
     next(error);
   }
@@ -459,16 +534,7 @@ app.get("/api/admin/blogs", authenticateAdmin, async (_req, res, next) => {
 
 app.post("/api/admin/blogs", authenticateAdmin, blogUpload.single("image"), async (req, res, next) => {
   try {
-    const title = readBlogField(req.body?.title, 180);
-    const description = readBlogField(req.body?.description, 320);
-    const content = readBlogField(req.body?.content, 50000);
-    const author = readBlogField(req.body?.author, 100) || "NextGenies";
-    const slug = slugify(readBlogField(req.body?.slug, 180) || title);
-    const isPublished = req.body?.isPublished === "true" || req.body?.isPublished === "1" || req.body?.isPublished === true;
-
-    if (!title || !description || !content || !slug) {
-      return res.status(400).json({ message: "Title, description, content, and a valid slug are required." });
-    }
+    const input = blogInput(req.body);
 
     let imageData = null;
     let imageMimeType = null;
@@ -479,25 +545,75 @@ app.post("/api/admin/blogs", authenticateAdmin, blogUpload.single("image"), asyn
       imageData = processedBuffer;
       imageMimeType = "image/jpeg";
 
-      const fileName = `blog-${slug}-${Date.now()}.jpg`;
+      const fileName = `blog-${input.slug}-${Date.now()}.jpg`;
       const filePath = path.join(uploadsPath, fileName);
       await fs.promises.writeFile(filePath, processedBuffer);
       imageUrl = `/uploads/${fileName}`;
     }
 
     const [result] = await db.execute(
-      `INSERT INTO blogs (title, slug, description, content, image_url, image_data, image_mime_type, author, is_published, published_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, slug, description, content, imageUrl, imageData, imageMimeType, author, isPublished ? 1 : 0, isPublished ? new Date().toISOString() : null]
+      `INSERT INTO blogs (title, slug, description, content, image_url, image_data, image_mime_type, author, is_published, published_at,
+       alt_text, categories, tags, meta_title, meta_description, focus_keywords, additional_keywords, robots_meta, canonical_url, faq_schema)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [input.title, input.slug, input.description, input.content, imageUrl, imageData, imageMimeType, input.author,
+        input.isPublished ? 1 : 0, input.isPublished ? new Date().toISOString() : null, input.altText, input.categories,
+        input.tags, input.metaTitle, input.metaDescription, input.focusKeywords, input.additionalKeywords, input.robotsMeta,
+        input.canonicalUrl, input.faqSchema]
     );
-    res.status(201).json({ id: result.insertId, message: "Blog published successfully." });
+    res.status(201).json({ id: result.insertId, message: input.isPublished ? "Blog published successfully." : "Draft saved successfully." });
   } catch (error) {
+    if (error.status) return res.status(error.status).json({ message: error.message });
     if (error.code === "ER_DUP_ENTRY" || String(error.message).includes("UNIQUE")) {
       return res.status(409).json({ message: "A blog with that slug already exists." });
     }
     next(error);
   }
 });
+
+app.put("/api/admin/blogs/:id", authenticateAdmin, blogUpload.single("image"), async (req, res, next) => {
+  try {
+    const input = blogInput(req.body);
+    const [existingRows] = await db.query("SELECT image_url AS imageUrl, image_data AS imageData, image_mime_type AS imageMimeType FROM blogs WHERE id = ?", [req.params.id]);
+    const existing = existingRows[0];
+    if (!existing) return res.status(404).json({ message: "Blog not found." });
+    let imageUrl = existing.imageUrl;
+    let imageData = existing.imageData;
+    let imageMimeType = existing.imageMimeType;
+    if (req.file?.buffer) {
+      const processedBuffer = await adjustBlogImage(req.file.buffer);
+      imageData = processedBuffer;
+      imageMimeType = "image/jpeg";
+      const fileName = `blog-${input.slug}-${Date.now()}.jpg`;
+      await fs.promises.writeFile(path.join(uploadsPath, fileName), processedBuffer);
+      imageUrl = `/uploads/${fileName}`;
+      removeBlogImage(existing.imageUrl);
+    }
+    await db.execute(
+      `UPDATE blogs SET title=?, slug=?, description=?, content=?, image_url=?, image_data=?, image_mime_type=?, author=?,
+       is_published=?, published_at=?, alt_text=?, categories=?, tags=?, meta_title=?, meta_description=?, focus_keywords=?,
+       additional_keywords=?, robots_meta=?, canonical_url=?, faq_schema=? WHERE id=?`,
+      [input.title, input.slug, input.description, input.content, imageUrl, imageData, imageMimeType, input.author,
+        input.isPublished ? 1 : 0, input.isPublished ? new Date().toISOString() : null, input.altText, input.categories,
+        input.tags, input.metaTitle, input.metaDescription, input.focusKeywords, input.additionalKeywords, input.robotsMeta,
+        input.canonicalUrl, input.faqSchema, req.params.id],
+    );
+    res.json({ message: input.isPublished ? "Blog updated and published." : "Draft updated." });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ message: error.message });
+    if (error.code === "ER_DUP_ENTRY" || String(error.message).includes("UNIQUE")) return res.status(409).json({ message: "A blog with that slug already exists." });
+    next(error);
+  }
+});
+
+for (const [action, published] of [["publish", 1], ["unpublish", 0]]) {
+  app.post(`/api/admin/blogs/:id/${action}`, authenticateAdmin, async (req, res, next) => {
+    try {
+      const [result] = await db.execute("UPDATE blogs SET is_published = ?, published_at = ? WHERE id = ?", [published, published ? new Date().toISOString() : null, req.params.id]);
+      if (!result.affectedRows) return res.status(404).json({ message: "Blog not found." });
+      res.json({ message: published ? "Blog published." : "Blog unpublished." });
+    } catch (error) { next(error); }
+  });
+}
 
 app.delete("/api/admin/blogs/:id", authenticateAdmin, async (req, res, next) => {
   try {

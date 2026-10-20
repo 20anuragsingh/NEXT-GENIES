@@ -47,9 +47,9 @@ const canonical = (p) => (p === "/" ? `${SITE}/` : `${SITE}${p}/`);
 const fullTitle = (t) => (t ? `${t} | ${SITE_NAME}` : `${SITE_NAME} | Digital Growth Agency`);
 const abs = (p) => (!p ? "" : /^https?:\/\//i.test(p) ? p : `${API}${p}`);
 
-function head({ title, description, path: p, type = "website", image = OG_IMAGE, robots = "index, follow", ld }) {
+function head({ title, description, path: p, type = "website", image = OG_IMAGE, robots = "index, follow", canonicalUrl, ld }) {
   const t = fullTitle(title);
-  const url = canonical(p);
+  const url = canonicalUrl || canonical(p);
   return [
     `<title>${esc(t)}</title>`,
     `<meta name="description" content="${esc(description)}" />`,
@@ -145,19 +145,27 @@ try {
     const p = `/blogs/${b.slug}`;
     const date = b.publishedAt || b.createdAt;
     const image = b.imageUrl ? abs(b.imageUrl) : OG_IMAGE;
+    const title = b.metaTitle || b.title;
+    const description = b.metaDescription || b.description;
+    const pageCanonical = b.canonicalUrl || canonical(p);
     const ld = [
       crumbs([["Home", "/"], ["Blogs", "/blogs"], [b.title, p]]),
       {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
         headline: b.title,
-        description: b.description,
+        description,
         image: [image],
         datePublished: date,
         author: { "@type": "Person", name: b.author },
         publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: `${SITE}/ng-logo-transparent.png` } },
-        mainEntityOfPage: canonical(p),
+        mainEntityOfPage: pageCanonical,
       },
+      ...(Array.isArray(b.faq) && b.faq.length ? [{
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: b.faq.map((item) => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })),
+      }] : []),
     ];
     const paragraphs = String(b.content || "")
       .split(/\n{2,}/)
@@ -166,7 +174,7 @@ try {
     write(
       p,
       render({
-        headHtml: head({ title: b.title, description: b.description, path: p, type: "article", image, ld }),
+        headHtml: head({ title, description, path: p, type: "article", image, robots: b.robotsMeta || "index, follow", canonicalUrl: pageCanonical, ld }),
         bodyHtml: fallback(`<article><h1>${esc(b.title)}</h1><p>${esc(b.description)}</p>${paragraphs}</article>`),
       }),
     );

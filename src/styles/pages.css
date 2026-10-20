@@ -166,8 +166,8 @@
 .stack-index li.done { color: var(--muted); }
 .stack-bar { height: 5px; border-radius: 4px; max-width: 280px; overflow: hidden; background: var(--bg); box-shadow: inset 2px 2px 4px var(--sh-dark), inset -2px -2px 4px var(--sh-light); }
 .stack-bar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; border-radius: 4px; }
-.stack-cards { position: relative; height: min(560px, calc(100svh - 170px)); min-height: 440px; }
-.svc-big { position: absolute; inset: 0; padding: clamp(24px, 3.2vw, 38px); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 14px; will-change: transform, opacity; overflow: hidden; }
+.stack-cards { position: relative; height: min(560px, calc(100svh - 170px)); min-height: 440px; padding: 8px; overflow: hidden; }
+.svc-big { position: absolute; inset: 8px; padding: clamp(24px, 3.2vw, 38px); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 14px; will-change: transform, opacity; overflow: hidden; box-shadow: 4px 4px 12px var(--sh-dark), -4px -4px 12px var(--sh-light); }
 .svc-big.static { position: static; }
 .svc-big-top { display: flex; align-items: center; gap: 12px; }
 .svc-big-n { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.05em; line-height: 1; color: color-mix(in srgb, var(--accent) 80%, transparent); }
@@ -184,13 +184,43 @@
   .stack-side .eyebrow { margin-bottom: 4px; }
   .stack-bar { max-width: none; margin-top: 12px; }
   .stack-cards { height: calc(100svh - 215px); min-height: 380px; }
-  .svc-big { padding: 20px; gap: 10px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .svc-big { padding: 20px; gap: 10px; }
   .svc-big-n { font-size: 1.8rem; } .svc-big-icon { display: none; }
   .svc-big-title { font-size: 1.35rem; }
   .svc-big .muted { font-size: 0.9rem; line-height: 1.5; }
   .svc-features { gap: 6px; } .svc-features li { font-size: 0.86rem; }
 }
 @media (max-height: 640px) and (max-width: 860px) { .svc-big .muted { display: none; } }
+@media (max-width: 600px) {
+  .stack-sticky { align-items: flex-start; }
+  .stack-grid { width: min(100% - 28px, 520px); padding-top: 112px; gap: 12px; }
+  .stack-title { font-size: clamp(1.65rem, 8vw, 2rem); line-height: 1.1; }
+  .stack-cards { height: clamp(360px, 52svh, 460px); min-height: 0; }
+  .svc-big { padding: 18px; gap: 9px; border-radius: var(--radius-lg); }
+  .svc-big-top { align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+  .svc-big-n { font-size: 1.65rem; }
+  .svc-big-top .pill { max-width: calc(100% - 54px); overflow: hidden; text-overflow: ellipsis; }
+  .svc-big-title { font-size: clamp(1.25rem, 6vw, 1.5rem); line-height: 1.15; }
+  .svc-big .muted { font-size: 0.88rem; line-height: 1.45; }
+  .svc-features li { align-items: flex-start; gap: 8px; line-height: 1.35; }
+  .svc-big-cta { width: 100%; margin-top: auto; }
+  .packages-grid {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin-inline: -4px;
+    padding: 8px 4px 14px;
+  }
+  .packages-grid::-webkit-scrollbar { display: none; }
+  .packages-grid > .pkg-card {
+    flex: 0 0 min(82vw, 320px);
+    min-height: 0;
+    scroll-snap-align: start;
+  }
+}
 @media (max-width: 520px) {
   .svc-card { padding: 20px 18px; gap: 14px; }
   .svc-card .svc-n { right: 16px; top: 14px; }
@@ -359,6 +389,10 @@
 .lib-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
 .img-preview { max-height: 180px; width: auto; border-radius: 14px; object-fit: cover; }
 .check { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.92rem; } .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.faq-editor { display: grid; gap: 12px; padding-top: 4px; }
+.faq-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.field-label { font-weight: 650; }
+.faq-editor-item { display: grid; gap: 10px; padding: 14px; border-radius: 16px; }
 @media (max-width: 960px) { .admin-blogs { grid-template-columns: 1fr; } .library { position: static; max-height: none; } }
 @media (max-width: 600px) { .admin-bar { position: static; } .tabs { width: 100%; } .tabs button { flex: 1; } .admin-bar-actions { width: 100%; } .admin-bar-actions .btn { flex: 1; } }
 

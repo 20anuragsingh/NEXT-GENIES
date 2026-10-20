@@ -5,11 +5,12 @@ import { api, formatWait } from "../lib/api";
 import { clearToken, loadToken, saveToken, tokenExpiry } from "../lib/auth";
 import { formatDate, mediaUrl } from "../lib/site";
 import { useCountdown } from "../hooks/useReveal";
+import { RichText } from "../lib/richText";
 
-const LIMITS = { title: 180, slug: 180, description: 320, content: 50000, author: 100 };
+const LIMITS = { title: 180, slug: 180, description: 320, content: 50000, author: 100, metaTitle: 180, metaDescription: 320, altText: 180 };
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_IMAGE = 5 * 1024 * 1024;
-const emptyForm = { title: "", slug: "", description: "", content: "", author: "NextGenies", isPublished: true };
+const emptyForm = { title: "", slug: "", description: "", content: "", author: "NextGenies", altText: "", categories: "", tags: "", metaTitle: "", metaDescription: "", focusKeywords: "", additionalKeywords: "", robotsMeta: "index, follow", canonicalUrl: "", faq: "[]", isPublished: false };
 
 /* ───────────────────────── Login ───────────────────────── */
 function Login({ onLogin, notice }) {
@@ -91,6 +92,9 @@ function Dashboard({ token, onLogout, onExpired }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
   const [fileKey, setFileKey] = useState(0);
+  const [editingId, setEditingId] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [faqItems, setFaqItems] = useState([]);
 
   const guard = useCallback(
     (err) => {
@@ -167,12 +171,14 @@ function Dashboard({ token, onLogout, onExpired }) {
     setBusy(true);
     setMsg({ type: "", text: "" });
     const fd = new FormData();
-    Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+    Object.entries({ ...form, faq: JSON.stringify(faqItems) }).forEach(([k, v]) => fd.append(k, v));
     if (image) fd.append("image", image);
     try {
-      const res = await api.admin.createBlog(token, fd);
+      const res = editingId ? await api.admin.updateBlog(token, editingId, fd) : await api.admin.createBlog(token, fd);
       setMsg({ type: "success", text: res.message || "Saved." });
       setForm(emptyForm);
+      setEditingId(null);
+      setFaqItems([]);
       setPicked(null);
       setFileKey((k) => k + 1);
       setBlogs(await api.admin.blogs(token));
@@ -180,6 +186,36 @@ function Dashboard({ token, onLogout, onExpired }) {
       if (!guard(err)) setMsg({ type: "error", text: err.message });
     } finally {
       setBusy(false);
+    }
+
+  }
+
+  function editBlog(blog) {
+    setEditingId(blog.id);
+    setForm({
+      ...emptyForm,
+      ...blog,
+      categories: (blog.categories || []).join(", "),
+      tags: (blog.tags || []).join(", "),
+      faq: JSON.stringify(blog.faq || [], null, 2),
+      isPublished: Boolean(blog.isPublished),
+    });
+    setFaqItems(Array.isArray(blog.faq) ? blog.faq : []);
+    setPicked(null);
+    setTab("blogs");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function updateFaq(index, key, value) {
+    setFaqItems((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item));
+  }
+
+  async function setBlogState(blog, action) {
+    try {
+      await api.admin.updateBlogState(token, blog.id, action);
+      setBlogs(await api.admin.blogs(token));
+    } catch (err) {
+      if (!guard(err)) setMsg({ type: "error", text: err.message });
     }
   }
 
@@ -267,7 +303,7 @@ function Dashboard({ token, onLogout, onExpired }) {
         {tab === "blogs" && (
           <section className="admin-blogs" aria-label="Blogs">
             <form className="editor neu-raised" onSubmit={publish}>
-              <h1 className="h3">Publish an insight</h1>
+              <h1 className="h3">{editingId ? "Edit insight" : "Create an insight"}</h1>
               <label className="field"><span>Title {counter(form.title, LIMITS.title)}</span>
                 <input className="input" maxLength={LIMITS.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></label>
               <label className="field"><span>URL slug <em>optional</em></span>
@@ -283,10 +319,53 @@ function Dashboard({ token, onLogout, onExpired }) {
                 <label className="field"><span>Cover image <em>max 5 MB</em></span>
                   <input key={fileKey} className="input" type="file" accept={IMAGE_TYPES.join(",")} onChange={pickImage} /></label>
               </div>
+              <div className="two-col">
+                <label className="field"><span>Image alt text {counter(form.altText, LIMITS.altText)}</span><input className="input" maxLength={LIMITS.altText} value={form.altText} onChange={(e) => setForm({ ...form, altText: e.target.value })} /></label>
+                <label className="field"><span>Categories <em>comma separated</em></span><input className="input" value={form.categories} onChange={(e) => setForm({ ...form, categories: e.target.value })} /></label>
+              </div>
+              <label className="field"><span>Tags <em>comma separated</em></span><input className="input" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} /></label>
+              <details className="seo-settings"><summary>SEO settings and FAQ</summary>
+                <div className="two-col">
+                  <label className="field"><span>Meta title {counter(form.metaTitle, LIMITS.metaTitle)}</span><input className="input" maxLength={LIMITS.metaTitle} value={form.metaTitle} onChange={(e) => setForm({ ...form, metaTitle: e.target.value })} placeholder={form.title || "Generated from title"} /></label>
+                  <label className="field"><span>Meta description {counter(form.metaDescription, LIMITS.metaDescription)}</span><textarea className="input" maxLength={LIMITS.metaDescription} rows={2} value={form.metaDescription} onChange={(e) => setForm({ ...form, metaDescription: e.target.value })} placeholder={form.description || "Generated from excerpt"} /></label>
+                </div>
+                <div className="two-col">
+                  <label className="field"><span>Focus keywords</span><input className="input" value={form.focusKeywords} onChange={(e) => setForm({ ...form, focusKeywords: e.target.value })} /></label>
+                  <label className="field"><span>Additional keywords</span><input className="input" value={form.additionalKeywords} onChange={(e) => setForm({ ...form, additionalKeywords: e.target.value })} /></label>
+                </div>
+                <div className="two-col">
+                  <label className="field"><span>Robots</span><select className="input" value={form.robotsMeta} onChange={(e) => setForm({ ...form, robotsMeta: e.target.value })}><option>index, follow</option><option>noindex, follow</option><option>index, nofollow</option><option>noindex, nofollow</option></select></label>
+                  <label className="field"><span>Canonical URL</span><input className="input" type="url" value={form.canonicalUrl} onChange={(e) => setForm({ ...form, canonicalUrl: e.target.value })} placeholder="Auto-generated from slug" /></label>
+                </div>
+                <div className="faq-editor">
+                  <div className="faq-editor-head"><span className="field-label">FAQs <em>shown on the article</em></span><button className="btn btn-neu btn-sm" type="button" onClick={() => setFaqItems((items) => [...items, { question: "", answer: "" }])}>Add question</button></div>
+                  {faqItems.length === 0 && <p className="muted">No FAQs yet. Add questions to create the visible FAQ section and FAQ schema.</p>}
+                  {faqItems.map((item, index) => (
+                    <div className="faq-editor-item neu-inset" key={index}>
+                      <label className="field"><span>Question {index + 1}</span><input className="input" value={item.question} onChange={(e) => updateFaq(index, "question", e.target.value)} placeholder="What should readers know?" /></label>
+                      <label className="field"><span>Answer</span><textarea className="input" rows={3} value={item.answer} onChange={(e) => updateFaq(index, "answer", e.target.value)} placeholder="Write a clear answer." /></label>
+                      <button className="btn btn-danger btn-sm" type="button" onClick={() => setFaqItems((items) => items.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+                {(form.metaTitle.length > 60 || form.metaDescription.length > 160) && <p className="alert error" role="status">SEO warning: title is over 60 or description is over 160 characters. This is guidance, not a ranking guarantee.</p>}
+              </details>
               {preview && <img className="img-preview" src={preview} alt="Selected cover preview" />}
+              <button className="btn btn-neu" type="button" onClick={() => setShowPreview((value) => !value)}>{showPreview ? "Hide preview" : "Preview"}</button>
+              {showPreview && (
+                <article className="post-card neu-raised" aria-label="Blog preview">
+                  <div className="post-body">
+                    <div className="post-meta"><span>{form.author || "NextGenies"}</span><span>Preview</span></div>
+                    <h2 className="h2">{form.title || "Untitled insight"}</h2>
+                    <p className="lead">{form.description}</p>
+                    <div className="prose"><RichText content={form.content} /></div>
+                  </div>
+                </article>
+              )}
               <label className="check"><input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} /> Publish immediately</label>
               {msg.text && <p className={`alert ${msg.type}`} role="status">{msg.text}</p>}
-              <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Saving…" : form.isPublished ? "Publish" : "Save draft"}</button>
+              <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Saving…" : editingId ? "Update insight" : form.isPublished ? "Publish" : "Save draft"}</button>
+              {editingId && <button className="btn btn-neu" type="button" onClick={() => { setEditingId(null); setForm(emptyForm); setPicked(null); }}>Cancel edit</button>}
             </form>
 
             <aside className="library neu-raised">
@@ -300,7 +379,9 @@ function Dashboard({ token, onLogout, onExpired }) {
                     <small>{b.isPublished ? "Published" : "Draft"} · /{b.slug} · {formatDate(b.publishedAt || b.createdAt)}</small>
                   </div>
                   <div className="lib-actions">
-                    {b.isPublished ? <Link className="btn btn-neu btn-sm" to={`/blogs/${b.slug}`} target="_blank">View</Link> : null}
+                  <button className="btn btn-neu btn-sm" onClick={() => editBlog(b)}>Edit</button>
+                  {b.isPublished ? <Link className="btn btn-neu btn-sm" to={`/blogs/${b.slug}`} target="_blank">View</Link> : null}
+                  <button className="btn btn-neu btn-sm" onClick={() => setBlogState(b, b.isPublished ? "unpublish" : "publish")}>{b.isPublished ? "Unpublish" : "Publish"}</button>
                     <button className="btn btn-danger btn-sm" onClick={() => removeBlog(b)} aria-label={`Delete ${b.title}`}>Delete</button>
                   </div>
                 </div>

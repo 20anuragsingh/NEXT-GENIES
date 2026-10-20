@@ -139,6 +139,16 @@ async function setupMysqlSchema(pool, databaseName) {
       author VARCHAR(100) NOT NULL DEFAULT 'NextGenies',
       is_published BOOLEAN NOT NULL DEFAULT FALSE,
       published_at TIMESTAMP NULL DEFAULT NULL,
+      alt_text VARCHAR(180) DEFAULT NULL,
+      categories TEXT DEFAULT NULL,
+      tags TEXT DEFAULT NULL,
+      meta_title VARCHAR(180) DEFAULT NULL,
+      meta_description VARCHAR(320) DEFAULT NULL,
+      focus_keywords VARCHAR(500) DEFAULT NULL,
+      additional_keywords VARCHAR(500) DEFAULT NULL,
+      robots_meta VARCHAR(100) NOT NULL DEFAULT 'index, follow',
+      canonical_url VARCHAR(500) DEFAULT NULL,
+      faq_schema TEXT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -155,6 +165,21 @@ async function setupMysqlSchema(pool, databaseName) {
     }
     if (!blogExisting.has("image_mime_type")) {
       await pool.query("ALTER TABLE blogs ADD COLUMN image_mime_type VARCHAR(100) DEFAULT NULL");
+    }
+    const additions = [
+      ["alt_text", "VARCHAR(180) DEFAULT NULL"],
+      ["categories", "TEXT DEFAULT NULL"],
+      ["tags", "TEXT DEFAULT NULL"],
+      ["meta_title", "VARCHAR(180) DEFAULT NULL"],
+      ["meta_description", "VARCHAR(320) DEFAULT NULL"],
+      ["focus_keywords", "VARCHAR(500) DEFAULT NULL"],
+      ["additional_keywords", "VARCHAR(500) DEFAULT NULL"],
+      ["robots_meta", "VARCHAR(100) NOT NULL DEFAULT 'index, follow'"],
+      ["canonical_url", "VARCHAR(500) DEFAULT NULL"],
+      ["faq_schema", "TEXT DEFAULT NULL"],
+    ];
+    for (const [name, definition] of additions) {
+      if (!blogExisting.has(name)) await pool.query(`ALTER TABLE blogs ADD COLUMN ${name} ${definition}`);
     }
   } catch (err) {
     console.warn("MySQL blog column check notice:", err.message);
@@ -192,9 +217,35 @@ function setupSqliteSchema(sqlite) {
       author TEXT NOT NULL DEFAULT 'NextGenies',
       is_published INTEGER NOT NULL DEFAULT 0,
       published_at DATETIME DEFAULT NULL,
+      alt_text TEXT DEFAULT NULL,
+      categories TEXT DEFAULT NULL,
+      tags TEXT DEFAULT NULL,
+      meta_title TEXT DEFAULT NULL,
+      meta_description TEXT DEFAULT NULL,
+      focus_keywords TEXT DEFAULT NULL,
+      additional_keywords TEXT DEFAULT NULL,
+      robots_meta TEXT NOT NULL DEFAULT 'index, follow',
+      canonical_url TEXT DEFAULT NULL,
+      faq_schema TEXT DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+  const columns = sqlite.prepare("PRAGMA table_info(blogs)").all().map((column) => column.name);
+  const additions = [
+    ["alt_text", "TEXT DEFAULT NULL"],
+    ["categories", "TEXT DEFAULT NULL"],
+    ["tags", "TEXT DEFAULT NULL"],
+    ["meta_title", "TEXT DEFAULT NULL"],
+    ["meta_description", "TEXT DEFAULT NULL"],
+    ["focus_keywords", "TEXT DEFAULT NULL"],
+    ["additional_keywords", "TEXT DEFAULT NULL"],
+    ["robots_meta", "TEXT NOT NULL DEFAULT 'index, follow'"],
+    ["canonical_url", "TEXT DEFAULT NULL"],
+    ["faq_schema", "TEXT DEFAULT NULL"],
+  ];
+  for (const [name, definition] of additions) {
+    if (!columns.includes(name)) sqlite.exec(`ALTER TABLE blogs ADD COLUMN ${name} ${definition}`);
+  }
 }
 
 /**
