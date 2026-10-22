@@ -55,10 +55,16 @@ export async function initDatabase() {
       await setupMysqlSchema(mysqlPool, dbName);
       return { driver: "mysql" };
     } catch (err) {
+      if (process.env.NODE_ENV === "production") {
+        throw err;
+      }
       console.warn(`⚠️ MySQL Connection failed: ${err.message}`);
       console.warn("🔄 Switching automatically to local SQLite database...");
     }
   } else {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("DB_HOST, DB_NAME, and DB_USER are required in production.");
+    }
     console.log("ℹ️ No MySQL credentials found in .env — using local SQLite database.");
   }
 

@@ -11,6 +11,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { initDatabase, db } from "./db.js";
+import { ROUTE_META } from "../src/seo/routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -174,9 +175,9 @@ const blogUpload = multer({
   },
 });
 
-const adminUsername = process.env.ADMIN_USERNAME || "admin";
-const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-const adminJwtSecret = process.env.ADMIN_JWT_SECRET || "nextgenies_jwt_secret_dev_key_2026";
+const adminUsername = process.env.ADMIN_USERNAME || (isProduction ? "" : "admin");
+const adminPassword = process.env.ADMIN_PASSWORD || (isProduction ? "" : "admin123");
+const adminJwtSecret = process.env.ADMIN_JWT_SECRET || (isProduction ? "" : "nextgenies_jwt_secret_dev_key_2026");
 
 function authenticateAdmin(req, res, next) {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
@@ -626,6 +627,72 @@ app.delete("/api/admin/blogs/:id", authenticateAdmin, async (req, res, next) => 
   }
 });
 
+// Dynamic SEO documents stay current when an admin publishes, edits, unpublishes, or deletes a blog.
+const publicSiteUrl = (process.env.VITE_SITE_URL || process.env.SITE_URL || "https://nextgenies.com").replace(/\/$/, "");
+const xmlEscape = (value) => String(value)
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;")
+  .replace(/'/g, "&apos;");
+const sitemapUrl = (route) => route === "/" ? `${publicSiteUrl}/` : `${publicSiteUrl}${route}/`;
+const sitemapDate = (value) => {
+  const text = String(value || "");
+  const date = value ? new Date(typeof value === "number" ? value : text.includes("T") || text.includes("Z") ? value : `${text.replace(" ", "T")}Z`) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+};
+
+app.get("/sitemap.xml", async (_req, res, next) => {
+  try {
+    const [blogs] = await db.query(
+      "SELECT slug, published_at AS publishedAt, created_at AS createdAt FROM blogs WHERE is_published = 1 ORDER BY published_at DESC, id DESC"
+    );
+    const newestBlogDate = blogs.reduce(
+      (latest, blog) => Math.max(latest, new Date(blog.publishedAt || blog.createdAt || 0).getTime()),
+      0,
+    );
+    const urls = [
+      ...ROUTE_META.map((route) => ({
+        loc: sitemapUrl(route.path),
+        lastmod: route.path === "/blogs" && newestBlogDate ? sitemapDate(newestBlogDate) : sitemapDate(),
+        changefreq: route.changefreq,
+        priority: route.priority,
+      })),
+      ...blogs.map((blog) => ({
+        loc: sitemapUrl(`/blogs/${blog.slug}`),
+        lastmod: sitemapDate(blog.publishedAt || blog.createdAt),
+        changefreq: "monthly",
+        priority: 0.7,
+      })),
+    ];
+    const body = urls
+      .map((url) => `  <url>\n    <loc>${xmlEscape(url.loc)}</loc>\n    <lastmod>${url.lastmod}</lastmod>\n    <changefreq>${url.changefreq}</changefreq>\n    <priority>${Number(url.priority).toFixed(1)}</priority>\n  </url>`)
+      .join("\n");
+    res
+      .type("application/xml")
+      .set("Cache-Control", "public, max-age=300, stale-while-revalidate=600")
+      .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/robots.txt", (_req, res) => {
+  res
+    .type("text/plain")
+    .set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+    .send(`# NextGenies — crawl rules
+User-agent: *
+Allow: /
+Allow: /api/blogs/*/image
+Disallow: /api/
+Disallow: /admin
+Disallow: /admin/
+
+Sitemap: ${publicSiteUrl}/sitemap.xml
+`);
+});
+
 // 404 handler for unknown API endpoints
 app.all("/api/{*splat}", (_req, res) => {
   res.status(404).json({
@@ -663,6 +730,9 @@ app.use((error, _req, res, next) => {
 
 async function startServer() {
   try {
+    if (isProduction && (!adminUsername || !adminPassword || !adminJwtSecret)) {
+      throw new Error("ADMIN_USERNAME, ADMIN_PASSWORD, and ADMIN_JWT_SECRET are required in production.");
+    }
     const { driver } = await initDatabase();
 
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {

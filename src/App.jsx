@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./pages/Home";
+import { trackPageView } from "./lib/analytics";
 
 const Services = lazy(() => import("./pages/Services"));
 const About = lazy(() => import("./pages/About"));
@@ -25,6 +26,21 @@ function ScrollToTop() {
   return null;
 }
 
+function AnalyticsPageViews() {
+  const location = useLocation();
+  const previousPath = useRef(null);
+
+  useEffect(() => {
+    const path = `${location.pathname}${location.search}${location.hash}`;
+    if (location.pathname.startsWith("/admin") || previousPath.current === path) return;
+    previousPath.current = path;
+    const frame = window.requestAnimationFrame(() => trackPageView(path));
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.pathname, location.search, location.hash]);
+
+  return null;
+}
+
 function PageFallback() {
   return (
     <div className="page-loading" role="status" aria-label="Loading page">
@@ -41,6 +57,7 @@ export default function App() {
     <>
       <a className="skip-link" href="#main">Skip to content</a>
       <ScrollToTop />
+      <AnalyticsPageViews />
       {!isAdmin && <Navbar />}
       <div id="main" tabIndex={-1} className="page-wrap">
         <ErrorBoundary>

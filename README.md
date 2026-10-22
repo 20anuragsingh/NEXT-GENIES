@@ -42,7 +42,7 @@ NextGenies is a high-performance digital growth agency web application built wit
 ### Backend
 * **Runtime**: Node.js 18+ with Express 5
 * **Database**: MySQL 8 via `mysql2`
-* **Authentication**: JSON Web Tokens (`jsonwebtoken`) & `bcryptjs`
+* **Authentication**: JSON Web Tokens (`jsonwebtoken`)
 * **File Handling**: `multer` with MIME-type and size validation
 * **Mailing**: `nodemailer`
 * **Security**: `helmet`, `cors`, `express-rate-limit`
@@ -106,7 +106,7 @@ NEXT-GENIES/
 │   │   └── genie.css          # Genie graphic ambient styling and animations
 │   ├── App.jsx                # Route declarations and suspense fallbacks
 │   └── main.jsx               # React DOM hydration entry point
-├── .env.example               # Frontend environment template
+├── .env                       # Local frontend environment (not committed)
 ├── package.json               # Frontend dependencies and build scripts
 └── vite.config.js             # Vite configuration
 ```
@@ -127,15 +127,21 @@ NEXT-GENIES/
    npm install
    ```
 
-2. Create your frontend environment file:
+2. Create your frontend environment file (do not commit it):
    ```bash
-   cp .env.example .env
+   # Create a file named .env in the project root
    ```
 
-3. Update `.env` (leave `VITE_API_URL` blank if frontend and backend run on the same domain):
+   If `.env.example` is not present in your checkout, create `.env` manually.
+3. Update `.env`:
    ```env
+   VITE_SITE_URL=https://nextgenies.com
    VITE_API_URL=http://localhost:5000
    ```
+
+   For a local same-origin setup, `VITE_API_URL` can be left blank when the
+   backend is serving the frontend. For production, use the public API URL
+   described in [Hostinger deployment](#hostinger-deployment).
 
 ### 3. Backend Installation & Configuration
 
@@ -238,22 +244,173 @@ The application uses native CSS custom properties defined in `src/styles/tokens.
 
 ---
 
-## 🚢 Production Deployment
+## 🚢 Hostinger Deployment
 
-1. **Build Frontend**:
-   ```bash
-   npm run build
-   ```
-   Deploy the resulting `dist/` directory to your static host (e.g. Nginx, Hostinger, Vercel, Cloudflare Pages).
-2. **Configure Environment**:
-   Ensure `FRONTEND_ORIGINS` in `backend/.env` is set to your production domain (e.g., `https://nextgenies.com`).
-3. **Run Backend Service**:
-   Run the backend under PM2, systemd, or Docker:
-   ```bash
-   pm2 start backend/server.js --name "nextgenies-api"
-   ```
-4. **Google Search Console**:
-   Submit `https://nextgenies.com/sitemap.xml` after deploying to ensure immediate discovery.
+The recommended Hostinger setup runs the Express backend and the built
+frontend in one Node.js application. The backend serves `dist/`, the API is
+available under `/api`, and the website and API use the same origin:
+
+```text
+https://nextgenies.com
+https://nextgenies.com/api/health
+```
+
+### 1. Create the Hostinger database
+
+In hPanel, create a MySQL database and user, then grant the user access to
+the database. Record the exact database host, name, username, password, and
+port. The backend creates the `contacts` and `blogs` tables on first startup.
+
+The local SQLite file is not migrated automatically. Export or manually
+recreate any local blog posts and contacts that must be retained.
+
+### 2. Configure production environment variables
+
+Set these values in Hostinger's Node.js environment settings or in a private
+`backend/.env` file. Never place secrets in `public/` or commit them.
+
+```env
+NODE_ENV=production
+PORT=5000
+
+VITE_SITE_URL=https://nextgenies.com
+VITE_API_URL=
+SEO_API_URL=https://nextgenies.com
+
+DB_HOST=your_hostinger_mysql_host
+DB_PORT=3306
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+
+ADMIN_USERNAME=your_real_admin_username
+ADMIN_PASSWORD=your_long_unique_admin_password
+ADMIN_JWT_SECRET=your_long_random_jwt_secret
+
+FRONTEND_ORIGINS=https://nextgenies.com,https://www.nextgenies.com
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email_address
+SMTP_PASS=your_google_app_password
+EMAIL_FROM=NextGenies <your_email_address>
+EMAIL_TO=your_business_email
+```
+
+Generate a JWT secret with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+Production startup intentionally fails when the admin secrets or required
+MySQL settings are missing. Do not use the development defaults.
+
+### 3. Build the application
+
+From the project root:
+
+```bash
+npm install
+npm run lint
+npm run build
+```
+
+The build creates `dist/`, route-specific prerendered HTML, `dist/robots.txt`,
+and `dist/sitemap.xml`. If published blog posts should be included in the
+build-time sitemap and prerendered pages, make the production API available
+at `SEO_API_URL` while running the build. The backend sitemap remains dynamic
+after deployment.
+
+Install backend dependencies as well:
+
+```bash
+cd backend
+npm install
+cd ..
+```
+
+### 4. Configure the Hostinger Node.js application
+
+In hPanel, create or configure the Node.js application with:
+
+```text
+Application root: NEXT-GENIES
+Startup file: backend/server.js
+Environment: production
+Node.js: 20 or newer
+```
+
+Upload the application source, `dist/`, and both package manifests. Do not
+upload `node_modules/`, `.env`, `backend/.env`, `.git/`, or local database
+files unless you intentionally migrate their data.
+
+Restart the Node.js application after setting environment variables.
+
+### 5. Configure the domain and HTTPS
+
+Point `nextgenies.com` and, if required, `www.nextgenies.com` to the
+Hostinger application. Enable SSL and force HTTPS. The canonical site URL
+used by this project is `https://nextgenies.com`; redirect the `www` version
+to it if that is your chosen primary domain.
+
+If Hostinger requires a separate API subdomain instead, use:
+
+```env
+VITE_API_URL=https://api.nextgenies.com
+SEO_API_URL=https://api.nextgenies.com
+FRONTEND_ORIGINS=https://nextgenies.com,https://www.nextgenies.com
+```
+
+### 6. Verify the live deployment
+
+Check these URLs after the application starts:
+
+```text
+https://nextgenies.com/
+https://nextgenies.com/services/
+https://nextgenies.com/blogs/
+https://nextgenies.com/robots.txt
+https://nextgenies.com/sitemap.xml
+https://nextgenies.com/api/health
+```
+
+The health endpoint should return `"status": "ok"` and `"database": "mysql"`.
+Also test the contact form, admin login at `/admin`, blog creation and image
+upload, publishing, email delivery, mobile layouts, HTTPS redirects, and both
+`www` and non-`www` hostnames.
+
+## 📈 Google Analytics
+
+The Google tag is included in `index.html`. Confirm that its Measurement ID
+belongs to the intended Google Analytics 4 web data stream before deploying.
+If it must be changed, update the `G-XXXXXXXXXX` value in `index.html` and
+run `npm run build` again.
+
+After deployment:
+
+1. Open Google Analytics and select the correct GA4 property.
+2. Open **Reports → Realtime**.
+3. Visit the live website in another browser or a private window.
+4. Confirm that the visit and page views appear.
+
+The application also sends SPA route changes and selected interaction events
+through `src/lib/analytics.js`.
+
+## 🔎 Google Search Console
+
+1. Open Google Search Console and add a **Domain** property for:
+   `nextgenies.com`.
+2. Copy the TXT verification record provided by Google.
+3. Add the TXT record in Hostinger DNS.
+4. Wait for DNS propagation and click **Verify**.
+5. Keep the TXT record in DNS after verification.
+6. Open **Sitemaps** and submit:
+   `https://nextgenies.com/sitemap.xml`
+7. Use **URL Inspection** for the home page and request indexing.
+
+Before submitting, confirm that `robots.txt`, `sitemap.xml`, canonical tags,
+page titles, descriptions, and HTTPS redirects all use the production domain.
 
 ---
 

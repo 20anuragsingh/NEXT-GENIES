@@ -6,9 +6,11 @@
  *     fallback) into dist/<route>/index.html — so crawlers and link-preview bots that don't run JavaScript still
  *     see the correct metadata. The React app takes over as soon as the JS loads.
  *  2. Fetches published blogs from the existing API (GET /api/blogs, GET /api/blogs/:slug) and prerenders each one.
- *  3. Writes a dynamic sitemap.xml (static routes + every published blog) and robots.txt into dist/.
+ *  3. Writes a build-time fallback sitemap.xml (static routes + every published blog) and robots.txt into dist/.
  *
- * Re-run `npm run seo` (or redeploy) after publishing posts to refresh the sitemap.
+ * Production deployments serve dynamic sitemap.xml and robots.txt from the backend, so publishing
+ * through the admin page does not require a frontend rebuild. The generated files remain a fallback
+ * for static hosting and local previews.
  * Env: VITE_SITE_URL, SEO_API_URL (falls back to VITE_API_URL, then the site URL).
  * It never fails the build: if the API is unreachable you still get the static routes.
  */
@@ -73,7 +75,7 @@ const NAV = `<nav><a href="/">Home</a> <a href="/services/">Services</a> <a href
 const fallback = (inner) => `<main style="max-width:760px;margin:0 auto;padding:96px 20px;font-family:system-ui,sans-serif">${NAV}${inner}</main>`;
 
 function render({ headHtml, bodyHtml }) {
-  let html = template.replace(/<!-- seo:start[\s\S]*?<!-- seo:end -->/, `<!-- seo -->\n    ${headHtml}\n    <!-- /seo -->`);
+  let html = template.replace("<seo-placeholder></seo-placeholder>", `<!-- seo -->\n    ${headHtml}\n    <!-- /seo -->`);
   html = html.replace("<!--app-fallback-->", bodyHtml);
   return html;
 }
@@ -82,6 +84,10 @@ function write(routePath, html) {
   const target = routePath === "/" ? path.join(dist, "index.html") : path.join(dist, routePath.replace(/^\//, ""), "index.html");
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, html);
+  const written = fs.readFileSync(target, "utf8");
+  if (!written.includes(`href="${canonical(routePath)}"`)) {
+    throw new Error(`[seo] ${routePath} did not receive its route-specific canonical URL.`);
+  }
 }
 
 async function getJson(url) {
