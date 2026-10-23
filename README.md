@@ -49,6 +49,15 @@ NextGenies is a high-performance digital growth agency web application built wit
 
 ---
 
+
+
+.
+.
+.
+.
+
+
+
 ## 📁 Project Structure
 
 ```text
