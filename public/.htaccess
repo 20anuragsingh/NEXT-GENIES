@@ -4,6 +4,18 @@
 </IfModule>
 Options -Indexes
 
+# CORS Headers for nextgenies.com and preview domains
+<IfModule mod_headers.c>
+  SetEnvIfNoCase Origin "^https?://(www\.)?nextgenies\.com$" CORS_OK=1
+  SetEnvIfNoCase Origin "^https?://.*\.hostingersite\.com$" CORS_OK=1
+  SetEnvIfNoCase Origin "^http://(localhost|127\.0\.0\.1)(:[0-9]+)?$" CORS_OK=1
+
+  Header always set Access-Control-Allow-Origin "%{Origin}e" env=CORS_OK
+  Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+  Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+  Header always set Access-Control-Allow-Credentials "true" env=CORS_OK
+</IfModule>
+
 # Prerendered pages live in /<route>/index.html (created by `npm run build`); everything else falls back to the SPA.
 # CRITICAL: Exclude /api and /uploads so LiteSpeed/Apache passes backend requests to Node.js!
 <IfModule mod_rewrite.c>

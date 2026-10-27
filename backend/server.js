@@ -136,24 +136,30 @@ app.use(
   }),
 );
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      const cleanOrigin = origin.replace(/\/$/, "");
-      if (
-        allowedOrigins.includes(cleanOrigin) ||
-        cleanOrigin.endsWith(".hostingersite.com") ||
-        cleanOrigin.endsWith("nextgenies.com")
-      ) {
-        return callback(null, true);
-      }
-      callback(null, false);
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: false,
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const clean = origin.toLowerCase().trim().replace(/\/$/, "");
+    if (
+      allowedOrigins.some((o) => clean === o.toLowerCase().trim().replace(/\/$/, "")) ||
+      clean.includes("nextgenies.com") ||
+      clean.includes("hostingersite.com") ||
+      clean.includes("localhost") ||
+      clean.includes("127.0.0.1")
+    ) {
+      return callback(null, true);
+    }
+    console.warn(`[CORS Blocked] Origin: ${origin}`);
+    callback(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.options("/{*splat}", cors(corsOptions));
 
 app.use(express.json({ limit: "50kb" }));
 
