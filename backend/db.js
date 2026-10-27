@@ -93,7 +93,7 @@ async function setupMysqlSchema(pool, databaseName) {
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
       full_name VARCHAR(100) NOT NULL,
       email VARCHAR(255) NOT NULL,
-      phone VARCHAR(30) NOT NULL DEFAULT '',
+      phone VARCHAR(50) NOT NULL DEFAULT '',
       company VARCHAR(150) DEFAULT NULL,
       service VARCHAR(100) NOT NULL,
       need_option VARCHAR(150) DEFAULT NULL,
@@ -113,7 +113,7 @@ async function setupMysqlSchema(pool, databaseName) {
     );
     const existing = new Set(cols.map((c) => c.COLUMN_NAME.toLowerCase()));
     if (!existing.has("phone")) {
-      await pool.query("ALTER TABLE contacts ADD COLUMN phone VARCHAR(30) NOT NULL DEFAULT ''");
+      await pool.query("ALTER TABLE contacts ADD COLUMN phone VARCHAR(50) NOT NULL DEFAULT ''");
     }
     if (!existing.has("company")) {
       await pool.query("ALTER TABLE contacts ADD COLUMN company VARCHAR(150) DEFAULT NULL");

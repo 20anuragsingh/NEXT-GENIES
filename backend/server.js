@@ -24,7 +24,7 @@ const isProduction = process.env.NODE_ENV === "production";
 // CORS
 const configuredOrigins = (
   process.env.FRONTEND_ORIGINS ||
-  "https://nextgenies.com,https://www.nextgenies.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173"
+  "https://nextgenies.com,https://www.nextgenies.com,https://nextgenies-com-161441.hostingersite.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173"
 )
   .split(",")
   .map((origin) => origin.trim())
@@ -49,6 +49,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER || "",
     pass: process.env.SMTP_PASS || "",
   },
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 8000,
 });
 
 async function sendContactEmails({ fullName, email, phone, service, message }) {
@@ -403,13 +406,13 @@ app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
       [fullName, email, phone, company, service, needOption, scopePreference, timeline, message]
     );
 
-    // Send notifications if SMTP configured
+    // Send notifications asynchronously without blocking the user response
     let emailSent = false;
-    try {
-      await sendContactEmails({ fullName, email, phone, service, message });
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && emailRecipients.length) {
+      sendContactEmails({ fullName, email, phone, service, message })
+        .then(() => console.log(`📧 Notification emails sent for inquiry #${result.insertId}`))
+        .catch((emailError) => console.warn("Notice: SMTP email notification failed:", emailError.message));
       emailSent = true;
-    } catch (emailError) {
-      console.warn("Notice: SMTP email notification skipped or failed:", emailError.message);
     }
 
     console.log(`📥 Contact lead #${result.insertId} saved to database [${db.driver}]: ${fullName} (${email})`);
@@ -736,17 +739,16 @@ async function startServer() {
     const { driver } = await initDatabase();
 
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-      try {
-        await transporter.verify();
+      transporter.verify().then(() => {
         console.log("✅ SMTP Connected");
-      } catch (smtpError) {
+      }).catch((smtpError) => {
         console.warn("⚠️ SMTP notice:", smtpError.message);
-      }
+      });
     } else {
       console.log("ℹ️ SMTP is not configured. Form submissions will be saved in the database only.");
     }
 
-    app.listen(port, () => {
+    app.listen(port, "0.0.0.0", () => {
       console.log(`🚀 NextGenies API running on http://localhost:${port} [Database: ${driver}]`);
     });
   } catch (err) {
