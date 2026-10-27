@@ -21,18 +21,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === "production";
 
-// CORS
-const configuredOrigins = (
-  process.env.FRONTEND_ORIGINS ||
-  "https://nextgenies.com,https://www.nextgenies.com,https://nextgenies-com-161441.hostingersite.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173"
-)
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-const allowedOrigins = [...new Set([
-  ...configuredOrigins,
-  ...(isProduction ? [] : ["http://127.0.0.1:5173", "http://127.0.0.1:4173"]),
-])];
+// Unrestricted CORS configured below
 
 const emailFrom = process.env.EMAIL_FROM || process.env.SMTP_USER;
 const emailRecipients = [
@@ -136,30 +125,31 @@ app.use(
   }),
 );
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    const clean = origin.toLowerCase().trim().replace(/\/$/, "");
-    if (
-      allowedOrigins.some((o) => clean === o.toLowerCase().trim().replace(/\/$/, "")) ||
-      clean.includes("nextgenies.com") ||
-      clean.includes("hostingersite.com") ||
-      clean.includes("localhost") ||
-      clean.includes("127.0.0.1")
-    ) {
-      return callback(null, true);
-    }
-    console.warn(`[CORS Blocked] Origin: ${origin}`);
-    callback(null, false);
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
+// 100% UNRESTRICTED CORS (ALLOW ALL ORIGINS, NO RESTRICTIONS)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "*");
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
 
-app.use(cors(corsOptions));
-app.options("/{*splat}", cors(corsOptions));
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["*"],
+    optionsSuccessStatus: 200,
+  })
+);
+app.options("/{*splat}", (_req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "*");
+  res.status(200).end();
+});
 
 app.use(express.json({ limit: "50kb" }));
 
@@ -358,6 +348,8 @@ async function adjustBlogImage(buffer) {
 // ============================================================================
 // HEALTH CHECK
 // ============================================================================
+app.get("/api/ping", (_req, res) => res.json({ status: "ok", message: "pong", time: new Date().toISOString() }));
+
 app.get("/api/health", async (_req, res) => {
   try {
     const health = await db.healthCheck();

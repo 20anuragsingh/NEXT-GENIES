@@ -4,20 +4,22 @@
 </IfModule>
 Options -Indexes
 
-# CORS Headers for nextgenies.com and preview domains
+# 100% OPEN CORS HEADERS (ALLOW ALL DOMAINS, ALL HEADERS, ALL METHODS)
 <IfModule mod_headers.c>
-  SetEnvIfNoCase Origin "^https?://(www\.)?nextgenies\.com$" CORS_OK=1
-  SetEnvIfNoCase Origin "^https?://.*\.hostingersite\.com$" CORS_OK=1
-  SetEnvIfNoCase Origin "^http://(localhost|127\.0\.0\.1)(:[0-9]+)?$" CORS_OK=1
+  Header always set Access-Control-Allow-Origin "*"
+  Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+  Header always set Access-Control-Allow-Headers "*"
+</IfModule>
 
-  Header always set Access-Control-Allow-Origin "%{Origin}e" env=CORS_OK
-  Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-  Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, Accept, Origin"
-  Header always set Access-Control-Allow-Credentials "true" env=CORS_OK
+# Handle OPTIONS preflight requests immediately with 200 OK
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_METHOD} OPTIONS
+  RewriteRule ^(.*)$ $1 [R=200,L]
 </IfModule>
 
 # Prerendered pages live in /<route>/index.html (created by `npm run build`); everything else falls back to the SPA.
-# CRITICAL: Exclude /api and /uploads so LiteSpeed/Apache passes backend requests to Node.js!
+# Exclude /api and /uploads so LiteSpeed/Apache passes backend requests to Node.js!
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
