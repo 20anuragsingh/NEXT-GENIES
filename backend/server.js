@@ -372,6 +372,10 @@ app.get("/api/health", async (_req, res) => {
 // CONTACT FORM SUBMISSION (CONNECT TO DATABASE)
 // ============================================================================
 app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
+  console.log("\n=======================================================");
+  console.log("📥 [Backend /api/contacts] Step 1: Received new contact submission");
+  console.log("🌐 Origin:", req.headers.origin || "same-origin", "| Method: POST | IP:", req.ip);
+  console.log("📋 Request Body:", req.body);
   try {
     const readField = (value) => (typeof value === "string" ? value.trim() : "");
 
@@ -385,6 +389,7 @@ app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
     const timeline = readField(req.body?.timeline) || "";
     const message = readField(req.body?.message);
 
+    console.log("🔍 [Backend /api/contacts] Step 2: Validating input fields...");
     // Validation
     if (
       !fullName ||
@@ -397,31 +402,39 @@ app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
       company.length > 150 ||
       service.length > 100 ||
       message.length > 15000 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      !/^[^s@]+@[^s@]+.[^s@]+$/.test(email)
     ) {
+      console.warn("❌ [Backend /api/contacts] Step 2 Failed: Validation failed! Invalid or missing fields.");
       return res.status(400).json({
         message: "Please provide a valid full name, email, service, and message.",
       });
     }
+    console.log("✅ [Backend /api/contacts] Step 2 Passed: All input fields are valid.");
 
     // Insert into database (MySQL or SQLite)
+    console.log(`💾 [Backend /api/contacts] Step 3: Saving to database [${db.driver}]...`);
     const [result] = await db.execute(
       `INSERT INTO contacts 
       (full_name, email, phone, company, service, need_option, scope_preference, timeline, message)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [fullName, email, phone, company, service, needOption, scopePreference, timeline, message]
     );
+    console.log(`✅ [Backend /api/contacts] Step 3 Passed: Successfully saved in database! Record ID: #${result.insertId}`);
 
     // Send notifications asynchronously without blocking the user response
     let emailSent = false;
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && emailRecipients.length) {
+      console.log("📧 [Backend /api/contacts] Step 4: Dispatching background notification email...");
       sendContactEmails({ fullName, email, phone, service, message })
-        .then(() => console.log(`📧 Notification emails sent for inquiry #${result.insertId}`))
-        .catch((emailError) => console.warn("Notice: SMTP email notification failed:", emailError.message));
+        .then(() => console.log(`📧 [Backend /api/contacts] Notification email sent for inquiry #${result.insertId}`))
+        .catch((emailError) => console.warn("⚠️ [Backend /api/contacts] SMTP email notification failed:", emailError.message));
       emailSent = true;
+    } else {
+      console.log("ℹ️ [Backend /api/contacts] Step 4: SMTP notification skipped (not configured).");
     }
 
-    console.log(`📥 Contact lead #${result.insertId} saved to database [${db.driver}]: ${fullName} (${email})`);
+    console.log("📤 [Backend /api/contacts] Step 5: Returning HTTP 201 Created response to client.");
+    console.log("=======================================================\n");
 
     res.status(201).json({
       message: "Message received and saved to database successfully!",
@@ -430,6 +443,7 @@ app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
       emailSent,
     });
   } catch (error) {
+    console.error("🚨 [Backend /api/contacts] Fatal error:", error);
     next(error);
   }
 });
