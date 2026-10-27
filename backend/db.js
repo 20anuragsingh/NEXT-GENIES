@@ -55,10 +55,36 @@ export async function initDatabase() {
       await setupMysqlSchema(mysqlPool, dbName);
       return { driver: "mysql" };
     } catch (err) {
-      if (process.env.NODE_ENV === "production") {
-        throw err;
+      console.warn(`⚠️ MySQL Connection failed (${dbHost}): ${err.message}`);
+      // If remote host failed, try local MySQL socket/host on Hostinger
+      if (dbHost !== "localhost" && dbHost !== "127.0.0.1") {
+        try {
+          console.log(`🔌 Retrying MySQL connection via localhost:${dbPort}/${dbName}...`);
+          const localPool = mysql.createPool({
+            host: "localhost",
+            port: dbPort,
+            user: dbUser,
+            password: dbPassword,
+            database: dbName,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+            connectTimeout: 4000,
+          });
+          const conn = await Promise.race([
+            localPool.getConnection(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Localhost MySQL timed out (4s)")), 4000)),
+          ]);
+          conn.release();
+          mysqlPool = localPool;
+          activeDriver = "mysql";
+          console.log(`✅ MySQL Connected successfully [${dbName}@localhost]`);
+          await setupMysqlSchema(mysqlPool, dbName);
+          return { driver: "mysql" };
+        } catch (localErr) {
+          console.warn(`⚠️ Localhost MySQL retry failed: ${localErr.message}`);
+        }
       }
-      console.warn(`⚠️ MySQL Connection failed: ${err.message}`);
       console.warn("🔄 Switching automatically to local SQLite database...");
     }
   } else {

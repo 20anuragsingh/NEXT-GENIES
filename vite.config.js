@@ -5,7 +5,8 @@ import babel from '@rolldown/plugin-babel'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const target = env.VITE_API_URL || 'https://nextgenies-com-161441.hostingersite.com'
+  // Target Hostinger deployed server by default
+  const target = env.VITE_PROXY_TARGET || 'https://nextgenies-com-161441.hostingersite.com'
 
   const apiProxy = {
     '/api': {

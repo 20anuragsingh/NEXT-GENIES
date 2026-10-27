@@ -56,6 +56,7 @@ export async function request(path, { method = "GET", token, json, formData, sig
   try {
     response = await fetch(`${API_URL}${path}`, { method, headers, body, signal: controller.signal });
   } catch (error) {
+    console.error("API Request Error:", error);
     if (signal?.aborted) throw error; // caller cancelled on purpose
     throw new ApiError(
       error.name === "AbortError"

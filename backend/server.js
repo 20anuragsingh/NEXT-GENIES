@@ -139,7 +139,13 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) return callback(null, true);
+      const cleanOrigin = origin.replace(/\/$/, "");
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        cleanOrigin.endsWith(".hostingersite.com") ||
+        cleanOrigin.endsWith("nextgenies.com")
+      ) {
         return callback(null, true);
       }
       callback(null, false);
