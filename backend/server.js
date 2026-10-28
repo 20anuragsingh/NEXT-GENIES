@@ -139,8 +139,8 @@ app.use((req, res, next) => {
   const allowedOrigin = requestOrigin && frontendOrigins.includes(requestOrigin)
     ? requestOrigin
     : frontendOrigins[0];
-  if (allowedOrigin) {
-    res.header("Access-Control-Allow-Origin", allowedOrigin);
+  {
+    res.header("Access-Control-Allow-Origin", allowedOrigin || "https://nextgenies.com");
     res.header("Vary", "Origin");
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
@@ -158,8 +158,8 @@ app.options("/{*splat}", (_req, res) => {
   const allowedOrigin = requestOrigin && frontendOrigins.includes(requestOrigin)
     ? requestOrigin
     : frontendOrigins[0];
-  if (allowedOrigin) {
-    res.header("Access-Control-Allow-Origin", allowedOrigin);
+  {
+    res.header("Access-Control-Allow-Origin", allowedOrigin || "https://nextgenies.com");
     res.header("Vary", "Origin");
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
