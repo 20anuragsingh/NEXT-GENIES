@@ -4,20 +4,6 @@
 </IfModule>
 Options -Indexes
 
-# 100% OPEN CORS HEADERS (ALLOW ALL DOMAINS, ALL HEADERS, ALL METHODS)
-<IfModule mod_headers.c>
-  Header always set Access-Control-Allow-Origin "*"
-  Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-  Header always set Access-Control-Allow-Headers "*"
-</IfModule>
-
-# Handle OPTIONS preflight requests immediately with 200 OK
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteCond %{REQUEST_METHOD} OPTIONS
-  RewriteRule ^(.*)$ $1 [R=200,L]
-</IfModule>
-
 # Prerendered pages live in /<route>/index.html (created by `npm run build`); everything else falls back to the SPA.
 # Exclude /api and /uploads so LiteSpeed/Apache passes backend requests to Node.js!
 <IfModule mod_rewrite.c>
