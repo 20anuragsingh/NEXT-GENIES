@@ -1,0 +1,13 @@
+{
+  "name": "NextGenies",
+  "short_name": "NextGenies",
+  "description": "Digital growth agency — content, websites, branding and social media.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e8ecf1",
+  "theme_color": "#e8ecf1",
+  "icons": [
+    { "src": "/ng-logo-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/ng-logo-transparent.png", "sizes": "any", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,10 @@
+# NextGenies — crawl rules
+User-agent: *
+Allow: /
+# Blog cover images are served by the API and should stay indexable
+Allow: /api/blogs/*/image
+Disallow: /api/
+Disallow: /admin
+Disallow: /admin/
+
+Sitemap: https://nextgenies.com/sitemap.xml

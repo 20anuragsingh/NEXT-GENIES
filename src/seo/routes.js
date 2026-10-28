@@ -1,0 +1,84 @@
+// Single source of truth for page-level SEO.
+// Imported by <SEO /> at runtime AND by scripts/generate-seo.mjs at build time (keep it plain JS, no JSX / import.meta).
+export const ROUTE_META = [
+  {
+    path: "/",
+    title: "Digital Agency for Indian Businesses — Websites, Content & Growth",
+    description:
+      "NextGenies helps businesses in India get more customers with clear branding, useful content, fast websites, social media and digital campaigns.",
+    priority: 1.0,
+    changefreq: "weekly",
+    heading: "We help Indian businesses grow online",
+  },
+  {
+    path: "/services",
+    title: "Our Core Digital Growth Services",
+    description:
+      "Explore NextGenies' full-service digital solutions: strategic content creation, custom website development, end-to-end social media management, and branding.",
+    priority: 0.9,
+    changefreq: "monthly",
+    heading: "Services built for growth",
+  },
+  {
+    path: "/about",
+    title: "About NextGenies — Built by Builders, for Bold Brands",
+    description:
+      "Learn how NextGenies combines creative storytelling with performance data to engineer compound digital growth systems for founders and modern businesses.",
+    priority: 0.7,
+    changefreq: "monthly",
+    heading: "Built by builders, for bold brands",
+  },
+  {
+    path: "/contact",
+    title: "Contact NextGenies — Start Your Project",
+    description:
+      "Tell us what you're building. Answer a few quick questions about your service, scope and timeline and the NextGenies team will get back to you shortly.",
+    priority: 0.8,
+    changefreq: "monthly",
+    heading: "Let's build something together",
+  },
+  {
+    path: "/blogs",
+    title: "Digital Growth Insights & Articles",
+    description:
+      "Practical insights on content, websites, branding, and digital growth from the NextGenies team.",
+    priority: 0.8,
+    changefreq: "weekly",
+    heading: "Ideas that move brands forward",
+  },
+  {
+    path: "/privacy-policy",
+    title: "Privacy Policy",
+    description:
+      "Read the NextGenies Privacy Policy to learn how we collect, protect, and handle your contact information with complete transparency.",
+    priority: 0.3,
+    changefreq: "yearly",
+    heading: "Privacy Policy",
+  },
+  {
+    path: "/terms-and-conditions",
+    title: "Terms & Conditions",
+    description: "Review the terms of service and client engagement standards governing digital marketing, content, website design, and branding at NextGenies.",
+    priority: 0.3,
+    changefreq: "yearly",
+    heading: "Terms & Conditions",
+  },
+  {
+    path: "/cookie-policy",
+    title: "Cookie Policy",
+    description: "Understand how NextGenies uses essential functional cookies and how you can manage or disable cookie preferences in your browser.",
+    priority: 0.3,
+    changefreq: "yearly",
+    heading: "Cookie Policy",
+  },
+  {
+    path: "/disclaimer",
+    title: "Disclaimer",
+    description: "Important information regarding NextGenies digital marketing results, past performance metrics, concept work illustrations, and external links.",
+    priority: 0.3,
+    changefreq: "yearly",
+    heading: "Disclaimer",
+  },
+];
+
+export const metaFor = (path) => ROUTE_META.find((r) => r.path === path);

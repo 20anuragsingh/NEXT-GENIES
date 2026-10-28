@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/ng-logo-192.png" />
+    <link rel="icon" type="image/png" sizes="any" href="/ng-logo-transparent.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/ng-logo-192.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#edf1f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15181f" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <seo-placeholder></seo-placeholder>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Apply the saved theme before first paint (prevents a light/dark flash) -->
+    <script>
+      try { var t = localStorage.getItem("ng-theme"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+    </script>
+
+    <!-- Google tag (gtag.js) — included once -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ESMZV18S3V"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      window.gtag = gtag;
+      gtag('js', new Date());
+      gtag('config', 'G-ESMZV18S3V');
+    </script>
+  </head>
+  <body>
+    <div id="root"><!--app-fallback--></div>
+    <noscript>NextGenies needs JavaScript to run the interactive parts of this site. Email us at nextgenies.team@gmail.com.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
