@@ -11,13 +11,14 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { initDatabase, db } from "./db.js";
-import { ROUTE_META } from "../src/seo/routes.js";
+import { ROUTE_META } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 const app = express();
+if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -372,7 +373,7 @@ app.get("/api/health", async (_req, res) => {
   } catch (error) {
     res.status(500).json({
       status: "error",
-      message: error.message,
+      message: isProduction ? "Database unavailable." : error.message,
     });
   }
 });
@@ -384,7 +385,7 @@ app.post("/api/contacts", contactRateLimit, async (req, res, next) => {
   console.log("\n=======================================================");
   console.log("📥 [Backend /api/contacts] Step 1: Received new contact submission");
   console.log("🌐 Origin:", req.headers.origin || "same-origin", "| Method: POST | IP:", req.ip);
-  console.log("📋 Request Body:", req.body);
+  console.log("📋 Request received (fields):", Object.keys(req.body || {}));
   try {
     const readField = (value) => (typeof value === "string" ? value.trim() : "");
 
@@ -762,8 +763,16 @@ app.use((error, _req, res, next) => {
 
 async function startServer() {
   try {
-    if (isProduction && (!adminUsername || !adminPassword || !adminJwtSecret)) {
-      throw new Error("ADMIN_USERNAME, ADMIN_PASSWORD, and ADMIN_JWT_SECRET are required in production.");
+    if (isProduction) {
+      if (!adminUsername || !adminPassword || !adminJwtSecret) {
+        throw new Error("ADMIN_USERNAME, ADMIN_PASSWORD, and ADMIN_JWT_SECRET are required in production.");
+      }
+      if (adminJwtSecret.length < 32 || adminJwtSecret === "replace-with-a-long-random-secret") {
+        throw new Error("ADMIN_JWT_SECRET must be a unique random value of at least 32 characters in production.");
+      }
+      if (!frontendOrigins.length || !frontendOrigins.includes("https://nextgenies.com")) {
+        throw new Error("FRONTEND_ORIGINS must include https://nextgenies.com in production.");
+      }
     }
     const { driver } = await initDatabase();
 
