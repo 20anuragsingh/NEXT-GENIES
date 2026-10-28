@@ -29,6 +29,7 @@ const frontendOrigins = (process.env.FRONTEND_ORIGINS || process.env.FRONTEND_OR
 if (!frontendOrigins.length) {
   frontendOrigins.push("https://nextgenies.com", "https://www.nextgenies.com");
 }
+frontendOrigins.unshift("https://nextgenies.com", "https://www.nextgenies.com");
 
 const emailFrom = process.env.EMAIL_FROM || process.env.SMTP_USER;
 const emailRecipients = [
