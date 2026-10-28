@@ -135,8 +135,11 @@ app.use(
 // Allow only configured frontend origins.
 app.use((req, res, next) => {
   const requestOrigin = req.headers.origin;
-  if (requestOrigin && frontendOrigins.includes(requestOrigin)) {
-    res.header("Access-Control-Allow-Origin", requestOrigin);
+  const allowedOrigin = requestOrigin && frontendOrigins.includes(requestOrigin)
+    ? requestOrigin
+    : frontendOrigins[0];
+  if (allowedOrigin) {
+    res.header("Access-Control-Allow-Origin", allowedOrigin);
     res.header("Vary", "Origin");
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
@@ -157,8 +160,11 @@ app.use(
 );
 app.options("/{*splat}", (_req, res) => {
   const requestOrigin = _req.headers.origin;
-  if (requestOrigin && frontendOrigins.includes(requestOrigin)) {
-    res.header("Access-Control-Allow-Origin", requestOrigin);
+  const allowedOrigin = requestOrigin && frontendOrigins.includes(requestOrigin)
+    ? requestOrigin
+    : frontendOrigins[0];
+  if (allowedOrigin) {
+    res.header("Access-Control-Allow-Origin", allowedOrigin);
     res.header("Vary", "Origin");
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
