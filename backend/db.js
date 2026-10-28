@@ -56,6 +56,9 @@ export async function initDatabase() {
       return { driver: "mysql" };
     } catch (err) {
       console.warn(`⚠️ MySQL Connection failed (${dbHost}): ${err.message}`);
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(`Production MySQL connection failed: ${err.message}`);
+      }
       // If remote host failed, try local MySQL socket/host on Hostinger
       if (dbHost !== "localhost" && dbHost !== "127.0.0.1") {
         try {

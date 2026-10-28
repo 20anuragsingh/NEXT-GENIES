@@ -21,7 +21,10 @@ const app = express();
 const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === "production";
 
-// Unrestricted CORS configured below
+const frontendOrigins = (process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const emailFrom = process.env.EMAIL_FROM || process.env.SMTP_USER;
 const emailRecipients = [
@@ -125,11 +128,15 @@ app.use(
   }),
 );
 
-// 100% UNRESTRICTED CORS (ALLOW ALL ORIGINS, NO RESTRICTIONS)
+// Allow only configured frontend origins.
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const requestOrigin = req.headers.origin;
+  if (requestOrigin && frontendOrigins.includes(requestOrigin)) {
+    res.header("Access-Control-Allow-Origin", requestOrigin);
+    res.header("Vary", "Origin");
+  }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -138,16 +145,20 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: "*",
+    origin: frontendOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["*"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     optionsSuccessStatus: 200,
   })
 );
 app.options("/{*splat}", (_req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const requestOrigin = _req.headers.origin;
+  if (requestOrigin && frontendOrigins.includes(requestOrigin)) {
+    res.header("Access-Control-Allow-Origin", requestOrigin);
+    res.header("Vary", "Origin");
+  }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.status(200).end();
 });
 
