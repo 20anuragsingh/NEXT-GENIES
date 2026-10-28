@@ -1,5 +1,4 @@
 import dotenv from "dotenv";
-import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
@@ -22,9 +21,10 @@ const isProduction = process.env.NODE_ENV === "production";
 if (isProduction) app.set("trust proxy", 1);
 const port = isProduction ? 3000 : Number(process.env.PORT || 5000);
 
+const normalizeOrigin = (origin) => origin.trim().replace(/^['\"]|['\"]$/g, "").replace(/\/$/, "");
 const frontendOrigins = (process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || "")
   .split(",")
-  .map((origin) => origin.trim())
+  .map(normalizeOrigin)
   .filter(Boolean);
 if (!frontendOrigins.length) {
   frontendOrigins.push("https://nextgenies.com", "https://www.nextgenies.com");
@@ -144,6 +144,7 @@ app.use((req, res, next) => {
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.path.startsWith("/api/")) res.set("Cache-Control", "no-store");
   if (req.method === "OPTIONS") {
     res.set("Cache-Control", "no-store");
     return res.status(200).end();
@@ -151,14 +152,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(
-  cors({
-    origin: frontendOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    optionsSuccessStatus: 200,
-  })
-);
 app.options("/{*splat}", (_req, res) => {
   const requestOrigin = _req.headers.origin;
   const allowedOrigin = requestOrigin && frontendOrigins.includes(requestOrigin)
