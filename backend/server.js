@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 const app = express();
 if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
-const port = process.env.PORT || 5000;
+const port = Number(process.env.PORT || 3000);
 const isProduction = process.env.NODE_ENV === "production";
 
 const frontendOrigins = (process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || "")
