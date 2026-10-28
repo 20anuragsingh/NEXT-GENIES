@@ -19,14 +19,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === "production";
 
-// CORS
-const allowedOrigins = (
-  process.env.FRONTEND_ORIGINS ||
-  "https://nextgenies.com,https://www.nextgenies.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173"
-)
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+// CORS: Accepting API requests from all domains
 
 const emailFrom = process.env.EMAIL_FROM || process.env.SMTP_USER;
 const emailRecipients = [
@@ -120,18 +113,22 @@ async function sendContactEmails({ fullName, email, phone, service, message }) {
   });
 }
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      callback(null, false);
+      // Allow API requests from all domains
+      callback(null, true);
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: false,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
   })
 );
 
